@@ -233,7 +233,7 @@ SEXP getMappingObjectR (SEXP MapObjectName, SEXP MapLengthName, SEXP verboseArg)
 #ifdef WIN32
   if (!UnmapViewOfFile(lpMapAddress)) {
 #else
-  if (munmap(length, len*sizeof(Rbyte)) == -1) {
+  if (munmap(addr, len*sizeof(Rbyte)) == -1) {
 #endif
     error("* Closing mapping file (address)...ERROR");
   }
