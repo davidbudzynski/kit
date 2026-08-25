@@ -138,6 +138,11 @@ SEXP createMappingObjectR (SEXP MapObjectName, SEXP MapLengthName, SEXP DataObje
     error("* Map view file...ERROR");
   }
   if (verbose) Rprintf("* Map view file...OK\n");
+#ifndef WIN32
+  if (close(foo->fd_addr) == -1 || close(foo->fd_length) == -1) {
+    error("* Closing file descriptors...ERROR");
+  }
+#endif
 #ifdef WIN32
   CopyMemory((LPVOID)foo->lpMapAddress, RAW(DataObject), BUF_SIZE);
   CopyMemory((LPVOID)foo->lpMapLength, &len, sizeof(size_t));
@@ -204,6 +209,11 @@ SEXP getMappingObjectR (SEXP MapObjectName, SEXP MapLengthName, SEXP verboseArg)
     error("* Map view file (address)...ERROR");
   }
   if (verbose) Rprintf("* Map view file (address)...OK\n");
+#ifndef WIN32
+  if (close(fd_addr) == -1 || close(fd_length) == -1) {
+    error("* Closing file descriptors...ERROR");
+  }
+#endif
   SEXP ans = PROTECT(allocVector(RAWSXP, len));
   if (verbose) Rprintf("* Create RAW Vector...OK\n");
 #ifdef WIN32
