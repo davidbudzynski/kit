@@ -1,3 +1,17 @@
+# kit 0.0.22 <small>(2026-08-25)</small>
+
+### Bug Fixes
+
+- Fix `shareData` and `getData` on platforms where `shm_open` requires names to start with a slash, e.g. FreeBSD. Shared memory object names are now normalized on all POSIX platforms as recommended by POSIX. Thanks to @nunotexbsd for raising an issue (#40).
+
+- Fix a mapping leak in `getData` where the wrong region was unmapped during cleanup.
+
+### Notes
+
+- File descriptors from `shm_open` are now closed after the mappings are established.
+
+- The test suite now skips `shareData` checks gracefully when POSIX shared memory is unavailable instead of aborting the whole run.
+
 # kit 0.0.21 <small>(2026-01-17)</small>
 
 ### New Features
