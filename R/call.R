@@ -1,6 +1,6 @@
 # Function calls
 charToFact  = function(x, decreasing=FALSE, addNA=TRUE, nThread=getOption("kit.nThread")) .Call(CcharToFactR, x, decreasing, nThread, NA, parent.frame(), addNA)
-clearData   = function(x, verbose=FALSE) .Call("CclearMappingObjectR", x, verbose)
+clearData   = function(x, verbose=FALSE) .Call("CclearMappingObjectR", x, checkVerbose(verbose))
 count       = function(x, value) .Call(CcountR, x, value)
 countNA     = function(x) .Call(CcountNAR, x)
 countOccur  = function(x) .Call(CcountOccurR, x)
@@ -62,26 +62,38 @@ psort = function(x, decreasing = FALSE, na.last = NA, nThread=getOption("kit.nTh
   sort(x, decreasing = decreasing, na.last = na.last,method = if(c.locale) "radix" else "quick")
 }
 
-shmName = function(map_name) sub("^/*", "/", map_name)
+shmName = function(map_name) {
+  if (!is.character(map_name) || length(map_name) != 1L || is.na(map_name) || !nzchar(map_name)) {
+    stop("Argument 'map_name' must be a single non-empty, non-missing string.")
+  }
+  sub("^/*", "/", map_name)
+}
+
+checkVerbose = function(verbose) {
+  if (!is.logical(verbose) || length(verbose) != 1L || is.na(verbose)) {
+    stop("Argument 'verbose' must be TRUE or FALSE and length 1.")
+  }
+  verbose
+}
 
 shareData = function(data, map_name, verbose=FALSE) {
+  map_name = shmName(map_name)
+  verbose = checkVerbose(verbose)
   conn = rawConnection(raw(0L), "w")
+  on.exit(close(conn), add = TRUE)
   serialize(data, conn)
   seek(conn, 0L)
-  map_name = shmName(map_name)
-  x = .Call(
+  .Call(
     "CcreateMappingObjectR", map_name, paste0(map_name,"_key"),
     rawConnectionValue(conn), verbose
   )
-  close(conn)
-  x
 }
 
 getData = function(map_name, verbose=FALSE) {
   map_name = shmName(map_name)
+  verbose = checkVerbose(verbose)
   output = .Call("CgetMappingObjectR", map_name, paste0(map_name,"_key"), verbose)
   conn = rawConnection(output,"r")
-  obj = unserialize(conn)
-  close(conn)
-  obj
+  on.exit(close(conn), add = TRUE)
+  unserialize(conn)
 }
