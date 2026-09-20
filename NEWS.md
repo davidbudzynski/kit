@@ -6,6 +6,8 @@
 
 - Fix `.onAttach`/`.onLoad` crash on bad `kit.nThread` (`NULL`/`NA`/length != 1): the option is now sanitized to `1L`, the default is restored via `is.null(getOption())`, and the startup message only prints in interactive sessions (#56).
 
+- Fix `shareData`/`getData`/`clearData` input validation: bad `map_name` (`""`/`NA`/length != 1/non-character) and `verbose` (`NA`/non-logical/length != 1) now fail fast in R with a clear message instead of reaching `shm_open` and its cryptic error; connections are closed via `on.exit` even when `serialize`/`unserialize` fails (#59).
+
 ### Notes
 
 - The test suite was migrated to tinytest: the legacy custom `check()` only printed failures without stopping, so regressions went unnoticed. Tests now fail loudly (1271 expectations) with zero additional dependencies.
