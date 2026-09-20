@@ -1,3 +1,9 @@
+# kit (development version)
+
+### Notes
+
+- The test suite was migrated to tinytest: the legacy custom `check()` only printed failures without stopping, so regressions went unnoticed. Tests now fail loudly (1271 expectations) with zero additional dependencies.
+
 # kit 0.0.22 <small>(2026-08-25)</small>
 
 ### Bug Fixes
