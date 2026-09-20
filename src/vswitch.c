@@ -73,7 +73,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
   SEXPTYPE type_o = UTYPEOF(outputs);
   SEXP xans = R_NilValue, vans = R_NilValue;
   bool utfcon = false;
-  if (pchkenc && type_x == STRSXP) {
+  if (pchkenc && type_x == STRSXP && len_x > 0) {
     if (isMixEnc(x) || isMixEnc(values) || getCharCE(STRING_PTR_RO(x)[0]) != getCharCE(STRING_PTR_RO(values)[0])) {
       xans = PROTECT(enc2UTF8(x)); nprotect++;
       vans = PROTECT(enc2UTF8(values)); nprotect++;

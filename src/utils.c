@@ -811,6 +811,7 @@ SEXP dfToMatrix(SEXP df) {
 
 bool isMixEnc(SEXP x) {
   const R_xlen_t len = xlength(x);
+  if (len <= 1) return false; // length-0/1 cannot be mixed; also avoids px[0] OOB on empty
   const SEXP *px = STRING_PTR_RO(x);
   const cetype_t ces = getCharCE(px[0]);
   for (R_xlen_t i = 1; i < len; ++i)
@@ -820,8 +821,9 @@ bool isMixEnc(SEXP x) {
 }
 
 SEXP enc2UTF8(SEXP x) {
-  const SEXP *px = STRING_PTR_RO(x);
   const R_xlen_t len = xlength(x);
+  if (len == 0) return x; // avoid px[0] OOB on empty input
+  const SEXP *px = STRING_PTR_RO(x);
   if (getCharCE(px[0]) != CE_UTF8) {
     SEXP ans = PROTECT(allocVector(STRSXP, len));
     for (R_xlen_t i = 0; i < len; ++i) {
