@@ -107,7 +107,7 @@ SEXP nswitchR(SEXP x, SEXP na, SEXP nthreads, SEXP chkenc, SEXP args) {
   SEXP xans = R_NilValue, vans = R_NilValue;
   int nprotect = 0;
   bool utfcon = false;
-  if (pchkenc && type_x == STRSXP) {
+  if (pchkenc && type_x == STRSXP && len_x > 0) {
     if (!isMixEnc(x)) {
       const cetype_t cx = getCharCE(STRING_PTR_RO(x)[0]);
       for (ssize_t i = 0; i < n; ++i) {

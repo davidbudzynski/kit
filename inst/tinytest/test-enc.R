@@ -4,9 +4,8 @@
 # (label attrs): locks checkEnc TRUE vs FALSE, data.table/tibble attrs,
 # Date/factor classes and safe length-0 paths.
 # Tests-only: no C changes.
-# NOTE: vswitch()/nswitch() on length-0 *character* input currently segfaults
-# (see follow-up to be filed); those inputs are deliberately NOT exercised here.
-# Only safe empties (integer-0 switch, funique/psort/charToFact empties) are tested.
+# Regression for #66: vswitch()/nswitch() on length-0 *character* input
+# used to segfault (character-path null-pointer dereference); now covered here.
 
 sys.source("helper-kit.R", envir = environment())
 set.seed(123)
@@ -72,7 +71,7 @@ if (requireNamespace("tibble", quietly = TRUE)) {
 # --- funique rejects lists with a clean error ---
 expect_error(funique(list()), pattern = "Type list is not supported.", fixed = TRUE, info="enc-027")
 
-# --- Safe empty / length-0 inputs (character-0 switch omitted: segfault, see NOTE) ---
+# --- Safe empty / length-0 inputs (regression for #66: character-0 switch) ---
 expect_identical(funique(character(0)), character(0), info="enc-028")
 expect_identical(funique(integer(0)), integer(0), info="enc-029")
 expect_identical(funique(as.Date(character(0))), as.Date(character(0)), info="enc-030")
@@ -83,3 +82,14 @@ expect_identical(vswitch(integer(0), 1L, 1L), integer(0), info="enc-034")
 expect_identical(iif(logical(0), 1L, 0L), integer(0), info="enc-035")
 expect_identical(psort(character(0)), character(0), info="enc-036")
 expect_identical(charToFact(character(0)), factor(character(0)), info="enc-037")
+
+# --- Regression #66: length-0 character input to vswitch/nswitch must not crash ---
+expect_identical(vswitch(character(0), "a", 1L), integer(0), info="enc-038")
+expect_identical(vswitch(character(0), "a", 1L, checkEnc = TRUE), integer(0), info="enc-039")
+expect_identical(vswitch(character(0), "a", 1L, checkEnc = FALSE), integer(0), info="enc-040")
+expect_identical(vswitch(character(0), "a", "x"), character(0), info="enc-041")
+expect_identical(vswitch(character(0), "a", 1, default = 0), numeric(0), info="enc-042")
+expect_identical(nswitch(character(0), "a", 1L, default = 0L), integer(0), info="enc-043")
+expect_identical(nswitch(character(0), "a", 1L, default = 0L, checkEnc = TRUE), integer(0), info="enc-044")
+expect_identical(nswitch(character(0), "a", 1L, default = 0L, checkEnc = FALSE), integer(0), info="enc-045")
+expect_identical(nswitch(character(0), "a", "x", default = "d"), character(0), info="enc-046")
