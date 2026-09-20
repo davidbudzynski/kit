@@ -121,6 +121,15 @@ expect_identical(fpmin(x0, y0, z0), pmin(x0, y0, z0), info="fpmin-gap-027")
 expect_identical(fpmax(x0, y0, z0), pmax(x0, y0, z0), info="fpmax-gap-016")
 expect_identical(prange(x0, y0, z0), pmax(x0, y0, z0) - pmin(x0, y0, z0), info="prange-gap-020")
 
+# --- Double answer with integer/logical later args (C REALSXP branches) ---
+# Covers src/psum.c fpminR/fpmaxR integer-arg loops for both na.rm settings,
+# including the all-NA first-arg (found[j] == 0) path.
+expect_identical(fpmin(c(NA_real_, 2), c(1L, 0L), na.rm = TRUE), c(1, 0), info="fpmin-gap-032")
+expect_identical(typeof(fpmin(c(NA_real_, 2), c(1L, 0L), na.rm = TRUE)), "double", info="fpmin-gap-033")
+expect_identical(fpmax(c(NA_real_, 2), c(1L, 5L), na.rm = TRUE), c(1, 5), info="fpmax-gap-020")
+expect_identical(fpmin(c(5, 5), c(1L, 2L), na.rm = FALSE), c(1, 2), info="fpmin-gap-034")
+expect_identical(fpmax(c(1, 1), c(3L, 0L), na.rm = FALSE), c(3, 1), info="fpmax-gap-021")
+
 # --- Errors: types, lengths, na.rm, factors (complex/raw unsupported here) ---
 expect_error(fpmin(as.raw(1:3), 1:3), pattern = "Only integer/logical and double types are supported", fixed = TRUE, info="fpmin-gap-028")
 expect_error(fpmax(1 + 0i, 2 + 0i), pattern = "Only integer/logical and double types are supported", fixed = TRUE, info="fpmax-gap-017")
@@ -133,3 +142,8 @@ expect_error(prange(na.rm = FALSE), pattern = "Please supply at least 1 argument
 expect_error(fpmin(factor(c("a", "b"))), pattern = "not meaningful for factors", fixed = TRUE, info="fpmin-gap-031")
 expect_error(fpmax(1:3, factor(c("a", "b", "c"))), pattern = "not meaningful for factors", fixed = TRUE, info="fpmax-gap-019")
 expect_error(prange(data.frame(x = 1:3, f = factor(c("a", "b", "c")))), pattern = "not meaningful for factors", fixed = TRUE, info="prange-gap-024")
+
+# Non-first arguments must also have supported types (C arg i+1 error path)
+expect_error(fpmin(c(1, 2, 3, 4), c(2, 3, 4, 5), as.raw(c(3L, 4L, 4L, 1L))), pattern = "Argument 3 is of type raw. Only integer/logical and double types are supported.", fixed = TRUE, info="fpmin-gap-035")
+expect_error(fpmax(c(1, 2, 3, 4), as.raw(c(3L, 4L, 4L, 1L))), pattern = "Argument 2 is of type raw. Only integer/logical and double types are supported.", fixed = TRUE, info="fpmax-gap-022")
+expect_error(prange(c(1, 2, 3, 4), as.raw(c(3L, 4L, 4L, 1L))), pattern = "Argument 2 is of type raw. Only integer/logical and double types are supported.", fixed = TRUE, info="prange-gap-025")
