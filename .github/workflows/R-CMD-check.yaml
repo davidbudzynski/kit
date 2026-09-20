@@ -45,6 +45,16 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      # TEMPORARY (2026-09-20): knitr 1.52 has no usable macOS binary —
+      # PPM serves a zstd-compressed .tgz that pak cannot extract and CRAN
+      # mirrors 404. Pre-install from source so pak skips the binary.
+      # Revert once upstream publishes a readable macOS binary.
+      - name: Install knitr from source on macOS
+        if: runner.os == 'macOS'
+        run: |
+          install.packages("knitr", type = "source", repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
