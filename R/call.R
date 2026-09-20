@@ -34,13 +34,14 @@ vswitch     = function(x, values, outputs, default=NULL, nThread=getOption("kit.
 
 .onAttach   = function(libname, pkgname) { #nocov
   omp = if(.Call(CompEnabledR)) "enabled" else "disabled" #nocov
-  nth = getOption("kit.nThread") #nocov
+  nth = getOption("kit.nThread", 1L) #nocov
+  if (is.null(nth) || length(nth) != 1L || is.na(nth)) nth = 1L #nocov
   thd = if (nth > 1L) " threads)" else " thread)" #nocov
-  packageStartupMessage(paste0("Attaching kit ", packageVersion("kit"), " (OPENMP ",omp," using ",nth,thd)) #nocov
+  if (interactive()) packageStartupMessage(paste0("Attaching kit ", packageVersion("kit"), " (OPENMP ",omp," using ",nth,thd)) #nocov
 } #nocov
 
 .onLoad     = function(libname, pkgname) { #nocov
-  if (!("kit.nThread" %in% names(options()))) { #nocov
+  if (is.null(getOption("kit.nThread"))) { #nocov
     options("kit.nThread"=1L) #nocov
   } #nocov
 } #nocov
