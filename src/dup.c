@@ -810,17 +810,17 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
   }
   const bool pfromLast = asLogical(fromLast);
   if (isFactor(x) && buniq) {
-    const int len = LENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
+    const R_xlen_t len = XLENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
     UNPROTECT(1);
     bool *restrict count = (bool*)R_Calloc(len+1,bool);
     const int *restrict px = INTEGER(x);
-    const int xlen = LENGTH(x);
+    const R_xlen_t xlen = XLENGTH(x);
     SEXP ans = PROTECT(allocVector(INTSXP, len));
     copyMostAttrib(x, ans);
     int *restrict pans = INTEGER(ans);
     if (pfromLast) {
-      int j = len-1;
-      for (int i = xlen-1; i >= 0; --i) {
+      R_xlen_t j = len-1;
+      for (R_xlen_t i = xlen-1; i >= 0; --i) {
         if (!count[px[i]]) {
           pans[j--] = px[i];
           if (j == -1)
@@ -837,8 +837,8 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
         return ans2;
       }
     } else {
-      int j = 0;
-      for (int i = 0; i < xlen; ++i) {
+      R_xlen_t j = 0;
+      for (R_xlen_t i = 0; i < xlen; ++i) {
         if (!count[px[i]]) {
           pans[j++] = px[i];
           if (j == len)
@@ -858,13 +858,13 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
   if (isLogical(x) && buniq) {
     bool *restrict count = (bool*)R_Calloc(3,bool);
     const int *restrict px = LOGICAL(x);
-    const int xlen = LENGTH(x);
+    const R_xlen_t xlen = XLENGTH(x);
     SEXP ans = PROTECT(allocVector(LGLSXP, 3));
     copyMostAttrib(x, ans);
     int *restrict pans = LOGICAL(ans);
     if (pfromLast) {
-      int j = 2;
-      for (int i = xlen-1; i >= 0; --i) {
+      R_xlen_t j = 2;
+      for (R_xlen_t i = xlen-1; i >= 0; --i) {
         const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
         if (!count[cs]) {
           pans[j--] = cs == 2 ? NA_LOGICAL : px[i];
@@ -882,8 +882,8 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
         return ans2;
       }
     } else {
-      int j = 0;
-      for (int i = 0; i < xlen; ++i) {
+      R_xlen_t j = 0;
+      for (R_xlen_t i = 0; i < xlen; ++i) {
         const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
         if (!count[cs]) {
           pans[j++] = cs == 2 ? NA_LOGICAL : px[i];

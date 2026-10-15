@@ -268,13 +268,13 @@ SEXP dupLenMatrixR(SEXP x) {
 
 SEXP dupLenVecR(SEXP x) {
   if (isFactor(x)) {
-    const int len = LENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
+    const R_xlen_t len = XLENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
     UNPROTECT(1);
     bool *restrict count = (bool*)R_Calloc(len+1,bool);
     const int *restrict px = INTEGER(x);
-    const int xlen = LENGTH(x);
-    int j = 0;
-    for (int i = 0; i < xlen; ++i) {
+    const R_xlen_t xlen = XLENGTH(x);
+    R_xlen_t j = 0;
+    for (R_xlen_t i = 0; i < xlen; ++i) {
       if (!count[px[i]]) {
         j++;
         if (j == len)
@@ -283,14 +283,14 @@ SEXP dupLenVecR(SEXP x) {
       }
     }
     R_Free(count);
-    return ScalarInteger(j);
+    return ScalarInteger((int)j);
   }
   if (isLogical(x)) {
     bool *restrict count = (bool*)R_Calloc(3,bool);
     const int *restrict px = LOGICAL(x);
-    const int xlen = LENGTH(x);
-    int j = 0;
-    for (int i = 0; i < xlen; ++i) {
+    const R_xlen_t xlen = XLENGTH(x);
+    R_xlen_t j = 0;
+    for (R_xlen_t i = 0; i < xlen; ++i) {
       const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
       if (!count[cs]) {
         j++;
@@ -300,7 +300,7 @@ SEXP dupLenVecR(SEXP x) {
       }
     }
     R_Free(count);
-    return ScalarInteger(j);
+    return ScalarInteger((int)j);
   }
   const R_xlen_t n = xlength(x);
   const SEXPTYPE tx = UTYPEOF(x);
