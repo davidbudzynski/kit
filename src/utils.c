@@ -289,7 +289,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     int *restrict pmato = LOGICAL(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -299,7 +299,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     int *restrict pmato = INTEGER(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -309,7 +309,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     double *restrict pmato = REAL(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -319,7 +319,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     Rcomplex *restrict pmato = COMPLEX(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -328,7 +328,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     const SEXP *restrict pmat = STRING_PTR_RO(mat);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        SET_STRING_ELT(mato, j+len_rws*i, pmat[prws[j]+row_mat*i]);
+        SET_STRING_ELT(mato, (R_xlen_t)j + (R_xlen_t)len_rws * i, pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i]);
       }
     }
   } break;
