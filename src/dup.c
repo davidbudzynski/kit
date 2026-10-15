@@ -815,23 +815,24 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
     bool *restrict count = (bool*)R_Calloc(len+1,bool);
     const int *restrict px = INTEGER(x);
     const R_xlen_t xlen = XLENGTH(x);
-    SEXP ans = PROTECT(allocVector(INTSXP, len));
+    SEXP ans = PROTECT(allocVector(INTSXP, len+1));
     copyMostAttrib(x, ans);
     int *restrict pans = INTEGER(ans);
     if (pfromLast) {
-      R_xlen_t j = len-1;
+      R_xlen_t j = len;
       for (R_xlen_t i = xlen-1; i >= 0; --i) {
-        if (!count[px[i]]) {
+        const int cs = px[i] == NA_INTEGER ? 0 : px[i];
+        if (!count[cs]) {
           pans[j--] = px[i];
           if (j == -1)
             break;
-          count[px[i]] = true;
+          count[cs] = true;
         }
       }
       if (j != -1) {
-        SEXP ans2 = PROTECT(allocVector(INTSXP, len-j-1));
+        SEXP ans2 = PROTECT(allocVector(INTSXP, len-j));
         copyMostAttrib(x, ans2);
-        memcpy(INTEGER(ans2),pans+j+1,(len-j-1)*sizeof(int));
+        memcpy(INTEGER(ans2),pans+j+1,(len-j)*sizeof(int));
         R_Free(count);
         UNPROTECT(2);
         return ans2;
@@ -839,14 +840,15 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
     } else {
       R_xlen_t j = 0;
       for (R_xlen_t i = 0; i < xlen; ++i) {
-        if (!count[px[i]]) {
+        const int cs = px[i] == NA_INTEGER ? 0 : px[i];
+        if (!count[cs]) {
           pans[j++] = px[i];
-          if (j == len)
+          if (j == len+1)
             break;
-          count[px[i]] = true;
+          count[cs] = true;
         }
       }
-      if (j != len) {
+      if (j != len+1) {
         ans = Rf_xlengthgets(ans, j);
         copyMostAttrib(x, ans);
       }

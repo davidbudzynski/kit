@@ -169,6 +169,8 @@ attr(x9,"label") = "logical"
 f1 = factor(c("A","B","C","C"))
 f2 = factor(c("A","B","C","A"))
 f3 = factor(c("A","C","A"),levels = c("A","B","C"))
+f4 = factor(c("A",NA,"B","A"))      # NA mixed with levels
+f5 = factor(c("B","A",NA,"B"))      # all levels and NA present
 
   expect_identical(funique(iris$Species), unique(iris$Species), info="funique-0016.001")
 
@@ -386,6 +388,18 @@ f3 = factor(c("A","C","A"),levels = c("A","B","C"))
   expect_identical(funique(f3,fromLast = TRUE), unique(f3,fromLast = TRUE), info="funique-0016.071")
 
 
+  expect_identical(funique(f4), unique(f4), info="funique-0016.071-2")
+
+
+  expect_identical(funique(f4,fromLast = TRUE), unique(f4,fromLast = TRUE), info="funique-0016.071-3")
+
+
+  expect_identical(funique(f5), unique(f5), info="funique-0016.071-4")
+
+
+  expect_identical(funique(f5,fromLast = TRUE), unique(f5,fromLast = TRUE), info="funique-0016.071-5")
+
+
   expect_identical(funique(data.frame(a=c(1,NA,NA,NaN,NaN),b=c(2,2,2,2,2))), {out = unique(data.frame(a=c(1,NA,NA,NaN,NaN),b=c(2,2,2,2,2))); row.names(out)<-NULL;out}, info="funique-0016.072")
 
 
@@ -579,4 +593,10 @@ x6 = data.frame(a = rep(seq.POSIXt(as.POSIXct("2020-01-01"),as.POSIXct("2020-01-
 
 
   expect_identical(uniqLen(factor(c("A","C","A"),levels = c("A","B","C"))), 2L, info="uniqLen-0018.036")
+
+
+  expect_identical(uniqLen(factor(c("A",NA,"B","A"))), length(unique(factor(c("A",NA,"B","A")))), info="uniqLen-0018.036-2")
+
+
+  expect_identical(uniqLen(factor(c("B","A",NA,"B"))), length(unique(factor(c("B","A",NA,"B")))), info="uniqLen-0018.036-3")
 

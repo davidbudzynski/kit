@@ -275,11 +275,12 @@ SEXP dupLenVecR(SEXP x) {
     const R_xlen_t xlen = XLENGTH(x);
     R_xlen_t j = 0;
     for (R_xlen_t i = 0; i < xlen; ++i) {
-      if (!count[px[i]]) {
+      const int cs = px[i] == NA_INTEGER ? 0 : px[i];
+      if (!count[cs]) {
         j++;
-        if (j == len)
+        if (j == len+1)
           break;
-        count[px[i]] = true;
+        count[cs] = true;
       }
     }
     R_Free(count);
