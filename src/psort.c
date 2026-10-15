@@ -118,7 +118,7 @@ static void recursiveRadixrev(const SEXP *restrict pans, const size_t k, size_t 
 }
 
 static SEXP rsort (SEXP x) {
-  const size_t len = LENGTH(x);
+  const size_t len = XLENGTH(x);
   const SEXP *restrict px = STRING_PTR_RO(x);
   SEXP ans = PROTECT(allocVector(STRSXP, len));
   uint8_t nprotect = 1;
@@ -166,7 +166,7 @@ static SEXP rsort (SEXP x) {
 }
 
 static SEXP rsortrev (SEXP x) {
-  const size_t len = LENGTH(x);
+  const size_t len = XLENGTH(x);
   const SEXP *restrict px = STRING_PTR_RO(x);
   SEXP ans = PROTECT(allocVector(STRSXP, len));
   uint8_t nprotect = 1;
@@ -386,10 +386,13 @@ SEXP cpsortR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, SEXP
   const int cindex = asLogical(index);
   const int dcr    = asLogical(decreasing);
   const int cl     = asLogical(clocale);
-  const int xlen   = LENGTH(x);
+  if (XLENGTH(x) > INT_MAX) {
+    error("Length of 'x' is too large. (Long vector not supported yet)"); // # nocov
+  }
+  const int xlen   = (int)XLENGTH(x);
   
   SEXP uVals = PROTECT(dupVecSort(x));
-  const int n = LENGTH(uVals);
+  const int n = (int)XLENGTH(uVals);
   
   const int early = xlen == n;
   SEXP valSorted = early ? (
@@ -405,7 +408,7 @@ SEXP cpsortR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, SEXP
   }*/
   
   SEXP *restrict pvalSorted = (SEXP*)STRING_PTR_RO(valSorted);
-  const int nlen = LENGTH(valSorted);
+  const int nlen = (int)XLENGTH(valSorted);
   
   int NAidx = -1;
   for (int i = 0; i < nlen; ++i) {
@@ -566,9 +569,12 @@ SEXP charToFactR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, 
   const int na_pos = asLogical(nalast);
   const int dcr = asLogical(decreasing);
   const int addNAv = asLogical(addNA);
-  const int xlen = LENGTH(x);
+  if (XLENGTH(x) > INT_MAX) {
+    error("Length of 'x' is too large. (Long vector not supported yet)"); // # nocov
+  }
+  const int xlen = (int)XLENGTH(x);
   SEXP uVals = PROTECT(dupVecSort(x));
-  const int n = LENGTH(uVals);
+  const int n = (int)XLENGTH(uVals);
   SEXP valSorted = PROTECT(callToSort2(uVals, "quick", dcr, 1, env));
   SEXP *restrict pvalSorted = (SEXP*)STRING_PTR_RO(valSorted);
   
@@ -613,7 +619,7 @@ SEXP charToFactR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, 
   
   free(lookupTable);
   if (addNAv == 0) {
-    valSorted = Rf_xlengthgets(valSorted, LENGTH(valSorted)-1);
+    valSorted = Rf_xlengthgets(valSorted, XLENGTH(valSorted)-1);
   }
   setAttrib(ans, R_LevelsSymbol, valSorted);
   SEXP classV = PROTECT(allocVector(STRSXP,1));
