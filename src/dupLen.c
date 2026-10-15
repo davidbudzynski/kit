@@ -275,7 +275,7 @@ SEXP dupLenVecR(SEXP x) {
     const R_xlen_t xlen = XLENGTH(x);
     R_xlen_t j = 0;
     for (R_xlen_t i = 0; i < xlen; ++i) {
-      const int cs = px[i] == NA_INTEGER ? 0 : px[i];
+      const int cs = ((unsigned)px[i] > (unsigned)len) ? 0 : px[i]; // one unsigned compare; 0, NA and out-of-range codes keep slot 0
       if (!count[cs]) {
         j++;
         if (j == len+1)
@@ -292,7 +292,7 @@ SEXP dupLenVecR(SEXP x) {
     const R_xlen_t xlen = XLENGTH(x);
     R_xlen_t j = 0;
     for (R_xlen_t i = 0; i < xlen; ++i) {
-      const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
+      const int cs = ((unsigned)px[i] > 1U) ? 2 : px[i];
       if (!count[cs]) {
         j++;
         if (j == 3)

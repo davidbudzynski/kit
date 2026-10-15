@@ -821,9 +821,9 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
     if (pfromLast) {
       R_xlen_t j = len;
       for (R_xlen_t i = xlen-1; i >= 0; --i) {
-        const int cs = px[i] == NA_INTEGER ? 0 : px[i];
+        const int cs = ((unsigned)px[i] > (unsigned)len) ? 0 : px[i]; // one unsigned compare; 0, NA and out-of-range codes keep slot 0
         if (!count[cs]) {
-          pans[j--] = px[i];
+          pans[j--] = (px[i] < 1 || px[i] > len) ? NA_INTEGER : px[i];
           if (j == -1)
             break;
           count[cs] = true;
@@ -840,9 +840,9 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
     } else {
       R_xlen_t j = 0;
       for (R_xlen_t i = 0; i < xlen; ++i) {
-        const int cs = px[i] == NA_INTEGER ? 0 : px[i];
+        const int cs = ((unsigned)px[i] > (unsigned)len) ? 0 : px[i];
         if (!count[cs]) {
-          pans[j++] = px[i];
+          pans[j++] = (px[i] < 1 || px[i] > len) ? NA_INTEGER : px[i];
           if (j == len+1)
             break;
           count[cs] = true;
@@ -867,7 +867,7 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
     if (pfromLast) {
       R_xlen_t j = 2;
       for (R_xlen_t i = xlen-1; i >= 0; --i) {
-        const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
+        const int cs = ((unsigned)px[i] > 1U) ? 2 : px[i];
         if (!count[cs]) {
           pans[j--] = cs == 2 ? NA_LOGICAL : px[i];
           if (j == -1)
@@ -886,7 +886,7 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
     } else {
       R_xlen_t j = 0;
       for (R_xlen_t i = 0; i < xlen; ++i) {
-        const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
+        const int cs = ((unsigned)px[i] > 1U) ? 2 : px[i];
         if (!count[cs]) {
           pans[j++] = cs == 2 ? NA_LOGICAL : px[i];
           if (j == 3)

@@ -171,6 +171,9 @@ f2 = factor(c("A","B","C","A"))
 f3 = factor(c("A","C","A"),levels = c("A","B","C"))
 f4 = factor(c("A",NA,"B","A"))      # NA mixed with levels
 f5 = factor(c("B","A",NA,"B"))      # all levels and NA present
+f6 = factor(c("A","B"))
+attr(f6,"levels") = "A"             # code 2 is now out of range
+f7 = structure(c(2L,3L), levels = "A", class = "factor") # two out-of-range codes
 
   expect_identical(funique(iris$Species), unique(iris$Species), info="funique-0016.001")
 
@@ -408,6 +411,14 @@ f5 = factor(c("B","A",NA,"B"))      # all levels and NA present
   # 0-column data.frame reaches dfToMatrix with len_x == 0: must not divide by zero (x86 #DE)
   expect_error(funique(data.frame()), info="funique-0016.074")
 
+  # out-of-range factor codes (e.g. from attr(x,"levels") surgery) are deduplicated by
+  # code and returned as NA like base; distinct invalid codes collapse into one NA
+  expect_identical(funique(f6), unique(f6), info="funique-0016.075")
+  expect_identical(funique(f6,fromLast = TRUE), unique(f6,fromLast = TRUE), info="funique-0016.076")
+  expect_identical(funique(structure(5L, levels = "a", class = "factor")), unique(structure(5L, levels = "a", class = "factor")), info="funique-0016.077")
+  expect_identical(funique(f7), structure(NA_integer_, levels = "A", class = "factor"), info="funique-0016.078")
+  expect_identical(funique(structure(2L, levels = character(0), class = "factor")), unique(structure(2L, levels = character(0), class = "factor")), info="funique-0016.079")
+
 x1 = sample(c(1:1000,NA_integer_),1e4,TRUE)
 x2 = sample(as.logical(c(1:1000,NA_integer_)),1e4,TRUE)
 x3 = sample(as.numeric(c(1:1000,NA_integer_)),1e4,TRUE)
@@ -605,4 +616,10 @@ x6 = data.frame(a = rep(seq.POSIXt(as.POSIXct("2020-01-01"),as.POSIXct("2020-01-
 
 
   expect_error(uniqLen(data.frame()), info="uniqLen-0018.037")
+
+
+  expect_identical(uniqLen(f6), length(unique(f6)), info="uniqLen-0018.038")
+
+
+  expect_identical(uniqLen(structure(5L, levels = "a", class = "factor")), 1L, info="uniqLen-0018.039")
 
