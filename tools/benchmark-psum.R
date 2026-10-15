@@ -2,7 +2,7 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) > 3L) stop("Usage: Rscript tools/benchmark-psum.R [library] [label] [n]")
 if (length(args) >= 1L && nzchar(args[[1]])) .libPaths(c(args[[1]], .libPaths()))
 label <- if (length(args) >= 2L) args[[2]] else "current"
-n <- if (length(args) >= 3L) as.integer(args[[3]]) else 10000000L
+n <- if (length(args) >= 3L) as.numeric(args[[3]]) else 10000000L
 library(kit)
 options(kit.nThread = 1L)
 
@@ -39,7 +39,7 @@ yi <- sample.int(1000L, n, replace = TRUE)
 zi <- sample.int(1000L, n, replace = TRUE)
 stopifnot(identical(psum(xi, yi, zi, na.rm = TRUE), xi + yi + zi))
 
-cat(sprintf("# R\t%s\tplatform\t%s\tpackage\t%s\tlabel\t%s\tn\t%d\n", R.version.string, R.version$platform, as.character(packageVersion("kit")), label, n))
+cat(sprintf("# R\t%s\tplatform\t%s\tpackage\t%s\tlabel\t%s\tn\t%.0f\n", R.version.string, R.version$platform, as.character(packageVersion("kit")), label, n))
 summarize("double3_clean", function() psum(x, y, z, na.rm = TRUE))
 summarize("double3_na5pct", function() psum(xn, yn, zn, na.rm = TRUE))
 summarize("integer3_clean", function() psum(xi, yi, zi, na.rm = TRUE))
