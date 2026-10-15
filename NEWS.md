@@ -10,6 +10,8 @@
 
 - Fix `shareData`/`getData`/`clearData` input validation: bad `map_name` (`""`/`NA`/length != 1/non-character) and `verbose` (`NA`/non-logical/length != 1) now fail fast in R with a clear message instead of reaching `shm_open` and its cryptic error; connections are closed via `on.exit` even when `serialize`/`unserialize` fails (#59).
 
+- Audit compiled length handling for 64-bit long vectors: `IS_BOOL`/`IS_LOGICAL` and the character `psort`/`charToFact` paths now use `XLENGTH()` (long character vectors are refused with the standard "Long vector not supported yet" error before any data is read), `funique`/`uniqLen` handle > 2^31 elements for factors and logicals, `topn` on long inputs returns double indices like `base::order`, `subSetRowMatrix` row indexing no longer overflows for matrices with >= 2^31 cells, and byte-size casts that truncated above 4 GiB are fixed (#61).
+
 ### Notes
 
 - Document the `shareData`/`getData`/`clearData` contract in `?shareData`: deep-copy cost (object serialized twice plus a memory-map copy, not a pointer), single-read `getData`, lifetime and cleanup semantics, platform differences, and a two-session `\dontrun` example; cross-links the zero-copy request (#43) (#60).
