@@ -751,6 +751,9 @@ SEXP dfToMatrix(SEXP df) {
   const R_xlen_t len_x = xlength(df);
   const R_xlen_t len_i = xlength(px[0]);
   const SEXPTYPE tx = UTYPEOF(px[0]);
+  if (len_x > 0 && len_i > INT_MAX / len_x) { // the flat index j + i*len_i overflows int below
+    error("Length of 'x' is too large. (Long vector not supported yet)");
+  }
   SEXP mlv = PROTECT(allocMatrix(tx, (int)len_i, (int)len_x));
   switch(tx) {
   case LGLSXP :{

@@ -31,6 +31,16 @@ expect_identical(funique(seq_len(10000L)), seq_len(10000L), info = "longv-0001.0
 expect_identical(uniqLen(seq_len(10000L)), 10000L, info = "longv-0001.007")
 expect_identical(topn(seq_len(10000L), 5L, decreasing = FALSE, hasna = FALSE), 1:5, info = "longv-0001.008")
 
+# a data.frame with > INT_MAX cells is refused up front. All columns share one
+# small logical vector, so building it is cheap and the error fires before
+# dfToMatrix allocates the matrix.
+col <- rep(TRUE, 50000L)
+bigdf <- structure(rep(list(col), 50000L), names = paste0("V", seq_len(50000L)),
+                   class = "data.frame", row.names = c(NA_integer_, -50000L))
+expect_error(funique(bigdf), pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.009")
+expect_error(uniqLen(bigdf), pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.010")
+rm(col, bigdf)
+
 # --- opt-in: >INT_MAX round trips ---
 if (!identical(Sys.getenv("KIT_TEST_LONG_VECTOR"), "true")) {
   exit_file("KIT_TEST_LONG_VECTOR != true: skipping >INT_MAX round-trip tests (needs tens of GB of RAM)")

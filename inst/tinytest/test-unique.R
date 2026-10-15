@@ -405,6 +405,9 @@ f5 = factor(c("B","A",NA,"B"))      # all levels and NA present
 
   expect_identical(funique(data.frame(a=as.complex(c(1,NA,NA,NaN,NaN)),b=c(2,2,2,2,2))), {out = unique(data.frame(a=as.complex(c(1,NA,NA,NaN,NaN)),b=c(2,2,2,2,2)));row.names(out)<-NULL;out}, info="funique-0016.073")
 
+  # 0-column data.frame reaches dfToMatrix with len_x == 0: must not divide by zero (x86 #DE)
+  expect_error(funique(data.frame()), info="funique-0016.074")
+
 x1 = sample(c(1:1000,NA_integer_),1e4,TRUE)
 x2 = sample(as.logical(c(1:1000,NA_integer_)),1e4,TRUE)
 x3 = sample(as.numeric(c(1:1000,NA_integer_)),1e4,TRUE)
@@ -599,4 +602,7 @@ x6 = data.frame(a = rep(seq.POSIXt(as.POSIXct("2020-01-01"),as.POSIXct("2020-01-
 
 
   expect_identical(uniqLen(factor(c("B","A",NA,"B"))), length(unique(factor(c("B","A",NA,"B")))), info="uniqLen-0018.036-3")
+
+
+  expect_error(uniqLen(data.frame()), info="uniqLen-0018.037")
 
