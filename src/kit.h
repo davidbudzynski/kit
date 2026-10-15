@@ -46,7 +46,7 @@
 #endif
 
 #define UTYPEOF(x) ((unsigned)TYPEOF(x))
-#define IS_BOOL(x) (LENGTH(x)==1 && TYPEOF(x)==LGLSXP && LOGICAL(x)[0]!=NA_LOGICAL)
+#define IS_BOOL(x) (XLENGTH(x)==1 && TYPEOF(x)==LGLSXP && LOGICAL(x)[0]!=NA_LOGICAL)
 #define IS_VALID_TYPE(x) ((x) == LGLSXP || (x)==INTSXP || (x)==REALSXP || (x)==CPLXSXP || (x)==STRSXP || (x)==VECSXP)
 #define PTR_ETL(x, y) (((const SEXP *)DATAPTR_RO(x))[y])
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))
@@ -68,7 +68,7 @@
 #define CEQUAL(x, y) ((N_ISNAN(x.r, x.i) && N_ISNAN(y.r, y.i)) ? (x.r == y.r && x.i == y.i) : (C_IsNA(x) ? C_IsNA(y) : (C_IsNA(y) ? 0 : (C_ISNAN(x.r, y.r) && C_ISNAN(x.i, y.i)))))
 #define STR_DF mkString("data.frame")
 #define MAX(a,b) (((a)>(b))?(a):(b))
-#define IS_LOGICAL(x) (isLogical(x) && LENGTH(x)==1)
+#define IS_LOGICAL(x) (isLogical(x) && XLENGTH(x)==1)
 
 extern SEXP addColToDataFrame(SEXP df, SEXP mcol, SEXP coln);
 extern SEXP callToOrder (SEXP x, const char* method, bool desc, bool na, SEXP env);
