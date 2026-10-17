@@ -40,7 +40,9 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
   const bool dcr = asLogical(dec);
   const SEXPTYPE tvec = UTYPEOF(vec);
   const bool vhasna = asLogical(hasna);
-  if ( ((len0 > 2000 && !vhasna) || (len0 > 1500 && vhasna)) && (tvec == INTSXP || tvec == REALSXP)) {
+  // len1 > INT_MAX: ans is INTSXP and cannot hold indices into a long vector;
+  // reuse the order() path, which returns double indices like base::order().
+  if ( ((len0 > 2000 && !vhasna) || (len0 > 1500 && vhasna) || len1 > INT_MAX) && (tvec == INTSXP || tvec == REALSXP)) {
     SEXP prem = PROTECT(callToOrder(vec, "radix", dcr, TRUE, env));
     SEXP ans = PROTECT(allocVector(UTYPEOF(prem), len0));
     switch(UTYPEOF(prem)) {

@@ -505,7 +505,7 @@ SEXP pmeanR(SEXP na, SEXP args) {
   const bool narm = asLogical(na);
   SEXP den = PROTECT(allocVector(REALSXP, len0));
   double *restrict pden = REAL(den);
-  memset(pden, 0, (unsigned)len0*sizeof(double));
+  memset(pden, 0, (size_t)len0*sizeof(double));
   double *restrict pans = REAL(ans);
   SEXP dbl_a = R_NilValue;
   PROTECT_INDEX Idbl;
@@ -621,7 +621,7 @@ SEXP pcountR(SEXP x, SEXP args) {
   if (len0 > INT_MAX) {
     ans = PROTECT(allocVector(REALSXP, len0)); // # nocov start
     double *restrict pans = REAL(ans);
-    memset(pans, 0, (unsigned)len0*sizeof(double));
+    memset(pans, 0, (size_t)len0*sizeof(double));
     switch(anstype) {
     case LGLSXP: {
       const int px = LOGICAL(x)[0];
@@ -682,7 +682,7 @@ SEXP pcountR(SEXP x, SEXP args) {
   } else {
     ans = PROTECT(allocVector(INTSXP, len0));
     int *restrict pans = INTEGER(ans);
-    memset(pans, 0, (unsigned)len0*sizeof(int));
+    memset(pans, 0, (size_t)len0*sizeof(int));
     switch(anstype) {
     case LGLSXP: {
       const int px = LOGICAL(x)[0];
@@ -775,7 +775,7 @@ SEXP pcountNAR(SEXP args) {
   if (len0 > INT_MAX) {
     ans = PROTECT(allocVector(REALSXP, len0)); // # nocov start
     double *restrict pans = REAL(ans);
-    memset(pans, 0, (unsigned)len0*sizeof(double));
+    memset(pans, 0, (size_t)len0*sizeof(double));
     for (int i = 0; i < n; ++i) {
     switch(UTYPEOF(PTR_ETL(args, i))) {
     case LGLSXP: {
@@ -833,7 +833,7 @@ SEXP pcountNAR(SEXP args) {
   } else {
     ans = PROTECT(allocVector(INTSXP, len0));
     int *restrict pans = INTEGER(ans);
-    memset(pans, 0, (unsigned)len0*sizeof(int));
+    memset(pans, 0, (size_t)len0*sizeof(int));
     for (int i = 0; i < n; ++i) {
     switch(UTYPEOF(PTR_ETL(args, i))) {
     case LGLSXP: {

@@ -70,7 +70,7 @@ SEXP dupDataFrameR(SEXP x, SEXP uniq, SEXP fromLast) { // move to matrix if poss
   SEXP ans = buniq ? R_NilValue: PROTECT(allocVector(LGLSXP, len_i));
   SEXP mlv = PROTECT(allocMatrix(INTSXP, (int)len_i, (int)len_x));
   for (R_xlen_t i = 0; i < len_x; ++i) {
-    memcpy(INTEGER(mlv)+i*len_i, INTEGER(PROTECT(dupVecIndexOnlyR(px[i]))), (unsigned)len_i*sizeof(int));
+    memcpy(INTEGER(mlv)+i*len_i, INTEGER(PROTECT(dupVecIndexOnlyR(px[i]))), (size_t)len_i*sizeof(int));
   }
   UNPROTECT((int)len_x);
   const size_t n2 = 2U * (size_t) len_i;
@@ -810,43 +810,45 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
   }
   const bool pfromLast = asLogical(fromLast);
   if (isFactor(x) && buniq) {
-    const int len = LENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
+    const R_xlen_t len = XLENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
     UNPROTECT(1);
     bool *restrict count = (bool*)R_Calloc(len+1,bool);
     const int *restrict px = INTEGER(x);
-    const int xlen = LENGTH(x);
-    SEXP ans = PROTECT(allocVector(INTSXP, len));
+    const R_xlen_t xlen = XLENGTH(x);
+    SEXP ans = PROTECT(allocVector(INTSXP, len+1));
     copyMostAttrib(x, ans);
     int *restrict pans = INTEGER(ans);
     if (pfromLast) {
-      int j = len-1;
-      for (int i = xlen-1; i >= 0; --i) {
-        if (!count[px[i]]) {
-          pans[j--] = px[i];
+      R_xlen_t j = len;
+      for (R_xlen_t i = xlen-1; i >= 0; --i) {
+        const int cs = ((unsigned)px[i] > (unsigned)len) ? 0 : px[i]; // one unsigned compare; 0, NA and out-of-range codes keep slot 0
+        if (!count[cs]) {
+          pans[j--] = (px[i] < 1 || px[i] > len) ? NA_INTEGER : px[i];
           if (j == -1)
             break;
-          count[px[i]] = true;
+          count[cs] = true;
         }
       }
       if (j != -1) {
-        SEXP ans2 = PROTECT(allocVector(INTSXP, len-j-1));
+        SEXP ans2 = PROTECT(allocVector(INTSXP, len-j));
         copyMostAttrib(x, ans2);
-        memcpy(INTEGER(ans2),pans+j+1,(len-j-1)*sizeof(int));
+        memcpy(INTEGER(ans2),pans+j+1,(len-j)*sizeof(int));
         R_Free(count);
         UNPROTECT(2);
         return ans2;
       }
     } else {
-      int j = 0;
-      for (int i = 0; i < xlen; ++i) {
-        if (!count[px[i]]) {
-          pans[j++] = px[i];
-          if (j == len)
+      R_xlen_t j = 0;
+      for (R_xlen_t i = 0; i < xlen; ++i) {
+        const int cs = ((unsigned)px[i] > (unsigned)len) ? 0 : px[i];
+        if (!count[cs]) {
+          pans[j++] = (px[i] < 1 || px[i] > len) ? NA_INTEGER : px[i];
+          if (j == len+1)
             break;
-          count[px[i]] = true;
+          count[cs] = true;
         }
       }
-      if (j != len) {
+      if (j != len+1) {
         ans = Rf_xlengthgets(ans, j);
         copyMostAttrib(x, ans);
       }
@@ -858,14 +860,14 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
   if (isLogical(x) && buniq) {
     bool *restrict count = (bool*)R_Calloc(3,bool);
     const int *restrict px = LOGICAL(x);
-    const int xlen = LENGTH(x);
+    const R_xlen_t xlen = XLENGTH(x);
     SEXP ans = PROTECT(allocVector(LGLSXP, 3));
     copyMostAttrib(x, ans);
     int *restrict pans = LOGICAL(ans);
     if (pfromLast) {
-      int j = 2;
-      for (int i = xlen-1; i >= 0; --i) {
-        const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
+      R_xlen_t j = 2;
+      for (R_xlen_t i = xlen-1; i >= 0; --i) {
+        const int cs = ((unsigned)px[i] > 1U) ? 2 : px[i];
         if (!count[cs]) {
           pans[j--] = cs == 2 ? NA_LOGICAL : px[i];
           if (j == -1)
@@ -882,9 +884,9 @@ SEXP dupVecR(SEXP x, SEXP uniq, SEXP fromLast) {
         return ans2;
       }
     } else {
-      int j = 0;
-      for (int i = 0; i < xlen; ++i) {
-        const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
+      R_xlen_t j = 0;
+      for (R_xlen_t i = 0; i < xlen; ++i) {
+        const int cs = ((unsigned)px[i] > 1U) ? 2 : px[i];
         if (!count[cs]) {
           pans[j++] = cs == 2 ? NA_LOGICAL : px[i];
           if (j == 3)

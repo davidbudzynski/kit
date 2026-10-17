@@ -10,6 +10,10 @@
 
 - Fix `shareData`/`getData`/`clearData` input validation: bad `map_name` (`""`/`NA`/length != 1/non-character) and `verbose` (`NA`/non-logical/length != 1) now fail fast in R with a clear message instead of reaching `shm_open` and its cryptic error; connections are closed via `on.exit` even when `serialize`/`unserialize` fails (#59).
 
+- Audit compiled length handling for 64-bit long vectors: `IS_BOOL`/`IS_LOGICAL` and the character `psort`/`charToFact` paths now use `XLENGTH()` (long character vectors are refused with the standard "Long vector not supported yet" error before any data is read), `funique`/`uniqLen` handle > 2^31 elements for factors and logicals, `topn` on long inputs returns double indices like `base::order`, `subSetRowMatrix` row indexing no longer overflows for matrices with >= 2^31 cells, and byte-size casts that truncated above 4 GiB are fixed (#61).
+
+- Fix two segfaults found while auditing length handling (#61): `funique`/`uniqLen` on factors containing `NA` read the count table out of bounds (the `NA` code is now kept in its own slot and missing elements are returned in the same order as `base::unique`/`length(unique())`), and `dfToMatrix` refused to bound-check a flat `int` index, so `funique`/`uniqLen` on data.frames with more than `INT_MAX` cells (e.g. 50k columns) wrote out of bounds; such data.frames now raise the standard "Long vector not supported yet" error. Factor codes outside `1..nlevels` (e.g. after `attr(x, "levels")` surgery) no longer index the count table out of bounds either and are returned as `NA` like base; distinct invalid codes collapse into one missing value.
+
 ### Notes
 
 - Document the `shareData`/`getData`/`clearData` contract in `?shareData`: deep-copy cost (object serialized twice plus a memory-map copy, not a pointer), single-read `getData`, lifetime and cleanup semantics, platform differences, and a two-session `\dontrun` example; cross-links the zero-copy request (#43) (#60).

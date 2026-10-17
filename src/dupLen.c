@@ -64,7 +64,7 @@ SEXP dupLenDataFrameR(SEXP x) {
   const R_xlen_t len_i = xlength(px[0]);
   SEXP mlv = PROTECT(allocMatrix(INTSXP, (int)len_i, (int)len_x));
   for (R_xlen_t i = 0; i < len_x; ++i) {
-    memcpy(INTEGER(mlv)+i*len_i, INTEGER(PROTECT(dupVecIndexOnlyR(px[i]))), (unsigned)len_i*sizeof(int));
+    memcpy(INTEGER(mlv)+i*len_i, INTEGER(PROTECT(dupVecIndexOnlyR(px[i]))), (size_t)len_i*sizeof(int));
   }
   UNPROTECT((int)len_x);
   const size_t n2 = 2U * (size_t) len_i;
@@ -268,30 +268,31 @@ SEXP dupLenMatrixR(SEXP x) {
 
 SEXP dupLenVecR(SEXP x) {
   if (isFactor(x)) {
-    const int len = LENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
+    const R_xlen_t len = XLENGTH(PROTECT(getAttrib(x, R_LevelsSymbol)));
     UNPROTECT(1);
     bool *restrict count = (bool*)R_Calloc(len+1,bool);
     const int *restrict px = INTEGER(x);
-    const int xlen = LENGTH(x);
-    int j = 0;
-    for (int i = 0; i < xlen; ++i) {
-      if (!count[px[i]]) {
+    const R_xlen_t xlen = XLENGTH(x);
+    R_xlen_t j = 0;
+    for (R_xlen_t i = 0; i < xlen; ++i) {
+      const int cs = ((unsigned)px[i] > (unsigned)len) ? 0 : px[i]; // one unsigned compare; 0, NA and out-of-range codes keep slot 0
+      if (!count[cs]) {
         j++;
-        if (j == len)
+        if (j == len+1)
           break;
-        count[px[i]] = true;
+        count[cs] = true;
       }
     }
     R_Free(count);
-    return ScalarInteger(j);
+    return ScalarInteger((int)j);
   }
   if (isLogical(x)) {
     bool *restrict count = (bool*)R_Calloc(3,bool);
     const int *restrict px = LOGICAL(x);
-    const int xlen = LENGTH(x);
-    int j = 0;
-    for (int i = 0; i < xlen; ++i) {
-      const int cs = px[i] == NA_LOGICAL ? 2 : px[i];
+    const R_xlen_t xlen = XLENGTH(x);
+    R_xlen_t j = 0;
+    for (R_xlen_t i = 0; i < xlen; ++i) {
+      const int cs = ((unsigned)px[i] > 1U) ? 2 : px[i];
       if (!count[cs]) {
         j++;
         if (j == 3)
@@ -300,7 +301,7 @@ SEXP dupLenVecR(SEXP x) {
       }
     }
     R_Free(count);
-    return ScalarInteger(j);
+    return ScalarInteger((int)j);
   }
   const R_xlen_t n = xlength(x);
   const SEXPTYPE tx = UTYPEOF(x);

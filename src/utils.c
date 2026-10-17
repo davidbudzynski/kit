@@ -289,7 +289,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     int *restrict pmato = LOGICAL(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -299,7 +299,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     int *restrict pmato = INTEGER(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -309,7 +309,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     double *restrict pmato = REAL(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -319,7 +319,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     Rcomplex *restrict pmato = COMPLEX(mato);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        pmato[j+len_rws*i] = pmat[prws[j]+row_mat*i];
+        pmato[(R_xlen_t)j + (R_xlen_t)len_rws * i] = pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i];
       }
     }
   } break;
@@ -328,7 +328,7 @@ SEXP subSetRowMatrix(SEXP mat, SEXP rws) {
     const SEXP *restrict pmat = STRING_PTR_RO(mat);
     for (int i = 0; i < col_mat; ++i) {
       for (int j = 0; j < len_rws; ++j) {
-        SET_STRING_ELT(mato, j+len_rws*i, pmat[prws[j]+row_mat*i]);
+        SET_STRING_ELT(mato, (R_xlen_t)j + (R_xlen_t)len_rws * i, pmat[(R_xlen_t)prws[j] + (R_xlen_t)row_mat * i]);
       }
     }
   } break;
@@ -388,13 +388,13 @@ SEXP subSetColMatrix(SEXP x, R_xlen_t idx) { // # nocov start
   switch(xt) {
   case LGLSXP : // LOGICAL() and INTEGER() are both int*, so one branch covers both
   case INTSXP : {
-    memcpy(INTEGER(ans), INTEGER(x)+pidx, (unsigned)len_i*sizeof(int));
+    memcpy(INTEGER(ans), INTEGER(x)+pidx, (size_t)len_i*sizeof(int));
   } break;
   case REALSXP : {
-    memcpy(REAL(ans), REAL(x)+pidx, (unsigned)len_i*sizeof(double));
+    memcpy(REAL(ans), REAL(x)+pidx, (size_t)len_i*sizeof(double));
   } break;
   case CPLXSXP : {
-    memcpy(COMPLEX(ans), COMPLEX(x)+pidx, (unsigned)len_i*sizeof(Rcomplex));
+    memcpy(COMPLEX(ans), COMPLEX(x)+pidx, (size_t)len_i*sizeof(Rcomplex));
   } break;
   case STRSXP : {
     const SEXP *restrict px = STRING_PTR_RO(x);
@@ -687,7 +687,7 @@ SEXP countOccurDataFrameR(SEXP x) { // move to matrix if possible (change hash a
   const R_xlen_t len_i = xlength(px[0]);
   SEXP mlv = PROTECT(allocMatrix(INTSXP, (int)len_i, (int)len_x));
   for (R_xlen_t i = 0; i < len_x; ++i) {
-    memcpy(INTEGER(mlv)+i*len_i, INTEGER(PROTECT(dupVecIndexOnlyR(px[i]))), (unsigned)len_i*sizeof(int));
+    memcpy(INTEGER(mlv)+i*len_i, INTEGER(PROTECT(dupVecIndexOnlyR(px[i]))), (size_t)len_i*sizeof(int));
   }
   UNPROTECT((int)len_x);
   const size_t n2 = 2U * (size_t) len_i;
@@ -751,6 +751,9 @@ SEXP dfToMatrix(SEXP df) {
   const R_xlen_t len_x = xlength(df);
   const R_xlen_t len_i = xlength(px[0]);
   const SEXPTYPE tx = UTYPEOF(px[0]);
+  if (len_x > 0 && len_i > INT_MAX / len_x) { // the flat index j + i*len_i overflows int below
+    error("Length of 'x' is too large. (Long vector not supported yet)");
+  }
   SEXP mlv = PROTECT(allocMatrix(tx, (int)len_i, (int)len_x));
   switch(tx) {
   case LGLSXP :{
