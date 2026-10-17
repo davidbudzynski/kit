@@ -19,7 +19,7 @@ topn(vec, n=6L, decreasing=TRUE, hasna=TRUE, index=TRUE)
 \value{
   \code{integer} vector of indices of the most extreme (according to \code{decreasing}) \code{n} values in vector \code{vec}. Please note that for large value of \code{n}, i.e. 1500 or 2000 (depending on the value of \code{hasna}), \code{topn} will default to base R function \code{order}.
 
-  For inputs longer than \code{.Machine$integer.max} the result is a \code{double} vector of indices, as an integer cannot address the whole input, computed with memory proportional to \code{n}. The output matches \code{order(vec, decreasing=decreasing, method="radix", na.last=TRUE)[1:n]}: ties keep input order and missing values are placed last in input order; this holds whatever the value of \code{hasna}, and \code{\link{order}} itself errors with \code{decreasing=TRUE} for such inputs while \code{topn} does not.
+  For inputs longer than \code{.Machine$integer.max} the result is a \code{double} vector of indices, as an integer cannot address the whole input, computed with memory proportional to \code{n}: the selection heap needs about 24 bytes per entry (double value, long index, missing flag) and the returned indices 8 bytes each. Note that for \code{n} larger than roughly three quarters of the input length this can exceed the memory of a full-length \code{order} index; the saving is the largest for small \code{n}. The output matches \code{order(vec, decreasing=decreasing, method="radix", na.last=TRUE)[1:n]}: ties keep input order and missing values are placed last in input order; this holds whatever the value of \code{hasna}, and \code{\link{order}} itself errors with \code{decreasing=TRUE} for such inputs while \code{topn} does not.
 }
 \author{Morgan Jacob}
 \examples{
