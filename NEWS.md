@@ -16,6 +16,8 @@
 
 ### Notes
 
+- Reduce `topn` memory use on long vectors (more than `INT_MAX` elements): the long path allocated a full-length radix `order()` index (~8 x length bytes, ~17 GB for a 2^31-element input, only to return n indices) and is replaced by a bounded heap of the n best (value, index) entries, so memory is now proportional to n; unmaterialized ALTREP inputs are read element-wise without being materialized. The result is unchanged — double indices like `order(vec, method="radix", na.last=TRUE)[1:n]`, ties and missing values keeping input order regardless of `hasna` — and `decreasing=TRUE` now works on such inputs, where the `order()` path errored with base R's "long vectors not supported" (#83).
+
 - Document the `shareData`/`getData`/`clearData` contract in `?shareData`: deep-copy cost (object serialized twice plus a memory-map copy, not a pointer), single-read `getData`, lifetime and cleanup semantics, platform differences, and a two-session `\dontrun` example; cross-links the zero-copy request (#43) (#60).
 
 - Clean up `DESCRIPTION` metadata: bump `Depends` to `R (>= 3.5.0)` to match the `DATAPTR_RO` fallback in `src/kit.h` (`...length()`, `R_RegisterCCallable`/`STRING_PTR_RO` need newer than 3.1), use `ByteCompile: yes` per WRE, drop `Repository: CRAN` from the dev tree, and add `Config/Needs/website: pkgdown` (`Suggests` already covers `data.table`/`tibble`/`tinytest` used in tests and vignette) (#58).

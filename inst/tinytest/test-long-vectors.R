@@ -3,10 +3,12 @@
 # The checks at the top are cheap: lengths are validated before any input is
 # materialized or read, so nothing large is ever allocated.
 #
-# The >INT_MAX round trips at the bottom need tens of GB of RAM, so they only
-# run when KIT_TEST_LONG_VECTOR=true (e.g. KIT_TEST_LONG_VECTOR=true R CMD check
-# on a big-memory machine). Topn's case is the heaviest: order() on a long
-# vector returns a double index vector of the full input length.
+# The >INT_MAX round trips at the bottom are gated behind
+# KIT_TEST_LONG_VECTOR=true (e.g. KIT_TEST_LONG_VECTOR=true R CMD check on a
+# big-memory machine). The topn() selection itself now needs memory proportional
+# to n instead of a full-length order() index (issue #83): an ALTREP input can
+# even be read without materializing, while the materialized read-path cases
+# below build a 17 GB double or 9 GB integer vector and need the RAM for it.
 
 # --- cheap: long lengths are reported / refused without allocating ---
 
@@ -43,7 +45,7 @@ rm(col, bigdf)
 
 # --- opt-in: >INT_MAX round trips ---
 if (!identical(Sys.getenv("KIT_TEST_LONG_VECTOR"), "true")) {
-  exit_file("KIT_TEST_LONG_VECTOR != true: skipping >INT_MAX round-trip tests (needs tens of GB of RAM)")
+  exit_file("KIT_TEST_LONG_VECTOR != true: skipping >INT_MAX round-trip tests (most functions here allocate 10-17 GB; topn's ALTREP checks are cheap but gated along)")
 }
 
 n <- 2^31 + 1000000 # double, as length() returns for long vectors
@@ -77,10 +79,66 @@ expect_error(psort(s), pattern = "Long vector not supported yet", fixed = TRUE, 
 rm(s)
 invisible(gc())
 
-# topn: long input takes the order() path and returns double indices like base::order()
+# topn: long input takes the bounded-heap selection and returns double indices
+# like base::order() (#83). The sequenced input below is an ALTREP compact
+# double object that keeps unmaterialized until read; the scan handles it with
+# element-wise access, so memory stays proportional to n throughout.
 v <- seq_len(n)
 r <- topn(v, 5L, decreasing = FALSE, hasna = FALSE)
 expect_identical(typeof(r), "double", info = "longv-0001.109")
 expect_identical(as.integer(r), 1:5, info = "longv-0001.110")
+
+# decreasing direction: the n largest elements are the tail of the sequence,
+# in stable index order (all distinct values), best first like order()
+r <- topn(v, 5L, decreasing = TRUE, hasna = FALSE)
+expect_identical(as.numeric(r), as.numeric(n:(n - 4)), info = "longv-0001.111")
+# hasna is accepted for API parity but plays no role when there are no NAs
+expect_identical(topn(v, 5L, decreasing = TRUE, hasna = TRUE), r, info = "longv-0001.112")
+# n = 1 is the long-vector equivalent of which.max()/which.min()
+expect_identical(topn(v, 1L, decreasing = TRUE, hasna = TRUE)[[1L]], n, info = "longv-0001.113")
+expect_identical(topn(v, 1L, decreasing = FALSE, hasna = TRUE)[[1L]], 1.0, info = "longv-0001.114")
 rm(v, r)
+invisible(gc())
+
+# topn on a materialized long vector (data-pointer read path) with ties and
+# missing values. The pattern repeats every 5 elements: positions 1 mod 5
+# hold NA, 2 mod 5 hold NaN, 3 mod 5 and 0 mod 5 hold 1.5, and 4 mod 5 holds
+# -2.5. Values are plentiful, so missing values never reach the output: the
+# winners are the earliest ties of the extreme value in each direction
+# (the two 1.5-carrying position classes interleave as 3, 5, 8, 10, 13, 15
+# when decreasing; the -2.5 class runs 4, 9, 14, 19, 24, 29 when increasing).
+p <- rep(c(NA_real_, NaN, 1.5, -2.5, 1.5), length.out = n)
+expect_identical(topn(p, 6L, decreasing = TRUE, hasna = TRUE),
+  as.numeric(c(3, 5, 8, 10, 13, 15)), info = "longv-0001.115")
+expect_identical(topn(p, 6L, decreasing = FALSE, hasna = FALSE),
+  as.numeric(c(4, 9, 14, 19, 24, 29)), info = "longv-0001.116")
+rm(p)
+invisible(gc())
+
+# topn on a materialized long vector with fewer non-missing values than n:
+# output is all m values (ties in index order) followed by the earliest NAs
+q <- rep(NA_real_, n)
+q[seq(1, n, by = 1e9)] <- 1.0
+expect_identical(topn(q, 5L, decreasing = TRUE, hasna = TRUE),
+  as.numeric(c(seq(1, n, by = 1e9), 2, 3)), info = "longv-0001.117")
+rm(q)
+invisible(gc())
+
+# materialized long integer vector with ties (NA_INTEGER is missing, 3 ties
+# repeat every 3 elements: NA, 3, -1)
+w <- rep(c(NA_integer_, 3L, -1L), length.out = n)
+expect_identical(topn(w, 2L, decreasing = TRUE, hasna = TRUE),
+  as.numeric(c(2, 5)), info = "longv-0001.118")
+expect_identical(topn(w, 3L, decreasing = FALSE, hasna = FALSE),
+  as.numeric(c(3, 6, 9)), info = "longv-0001.119")
+rm(w)
+invisible(gc())
+
+# long integer vector with fewer non-missing values than n: values first, then
+# the earliest NA_INTEGER elements
+w <- rep(NA_integer_, n)
+w[seq(1, n, by = 1e9)] <- 7L
+expect_identical(topn(w, 5L, decreasing = TRUE, hasna = FALSE),
+  as.numeric(c(seq(1, n, by = 1e9), 2, 3)), info = "longv-0001.120")
+rm(w)
 invisible(gc())
