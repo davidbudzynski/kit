@@ -67,6 +67,9 @@ SEXP dupDataFrameR(SEXP x, SEXP uniq, SEXP fromLast) { // move to matrix if poss
     return output;
   }
   const R_xlen_t len_i = xlength(px[0]);
+  if (len_i > INT_MAX || (len_x > 0 && len_i > INT_MAX / len_x)) { // the row ids h[id] = (int) i + 1 and the (int) casts in allocMatrix below truncate above INT_MAX
+    error("Length of 'x' is too large. (Long vector not supported yet)");
+  }
   SEXP ans = buniq ? R_NilValue: PROTECT(allocVector(LGLSXP, len_i));
   SEXP mlv = PROTECT(allocMatrix(INTSXP, (int)len_i, (int)len_x));
   for (R_xlen_t i = 0; i < len_x; ++i) {

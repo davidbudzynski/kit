@@ -41,7 +41,30 @@ bigdf <- structure(rep(list(col), 50000L), names = paste0("V", seq_len(50000L)),
                    class = "data.frame", row.names = c(NA_integer_, -50000L))
 expect_error(funique(bigdf), pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.009")
 expect_error(uniqLen(bigdf), pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.010")
+
+# the mixed-type data.frame branch has no dfToMatrix guard: countOccur has no
+# same-type shortcut at all, so a >INT_MAX-cell mixed-regime data.frame used to
+# run the whole mixed-type pipeline (an INTSXP matrix of 2.5e9 cells). fduplicated
+# shares funique's same-type branch and errors through dfToMatrix like above.
+expect_error(fduplicated(bigdf), pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.011")
+expect_error(countOccur(bigdf),  pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.012")
 rm(col, bigdf)
+
+# more than INT_MAX rows on a data.frame (issue #82): row counts are truncated to
+# int inside allocMatrix(INTSXP, (int) rows, (int) cols). Column 1 is a compact
+# sequence ALTREP, so building the data.frame allocates almost nothing: the error
+# must fire before any column is read, and no column is ever dereferenced below,
+# so column 2 (an integer(0), shorter than column 1) is first kept small on
+# purpose. R itself cannot attach integer row.names above INT_MAX, so such
+# data.frames exist only via attribute surgery. Master errored with R's native
+# "negative extents to matrix" (for (int) rows < 0) instead of the standard error.
+rows <- 2^31 + 1000000L
+mixeddf <- structure(list(seq_len(rows), integer(0)), names = c("a", "b"), class = "data.frame")
+expect_error(funique(mixeddf),     pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.013")
+expect_error(fduplicated(mixeddf), pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.014")
+expect_error(uniqLen(mixeddf),     pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.015")
+expect_error(countOccur(mixeddf),  pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.016")
+rm(mixeddf, rows)
 
 # --- opt-in: >INT_MAX round trips ---
 if (!identical(Sys.getenv("KIT_TEST_LONG_VECTOR"), "true")) {
@@ -71,6 +94,19 @@ lg <- rep(TRUE, n)
 expect_identical(funique(lg), TRUE, info = "longv-0001.106")
 expect_identical(uniqLen(lg), 1L, info = "longv-0001.107")
 rm(lg)
+invisible(gc())
+
+# mixed-type data.frame with more than INT_MAX rows, on a real construction with
+# matched column lengths (issue #82): the guard must fire before any column is
+# read, so the 17 GB integer column is built and then never even copied. The
+# first column is a compact sequence ALTREP; R cannot attach integer row.names
+# above INT_MAX, so attribute surgery is the only way to build this.
+mixeddf <- structure(list(seq_len(n), rep(1L, n)), names = c("a", "b"), class = "data.frame")
+expect_error(funique(mixeddf),     pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.121")
+expect_error(fduplicated(mixeddf), pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.122")
+expect_error(uniqLen(mixeddf),     pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.123")
+expect_error(countOccur(mixeddf),  pattern = "Length of 'x' is too large. (Long vector not supported yet)", fixed = TRUE, info = "longv-0001.124")
+rm(mixeddf)
 invisible(gc())
 
 # psort: long character vectors are refused before being read
