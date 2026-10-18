@@ -685,6 +685,9 @@ SEXP countOccurDataFrameR(SEXP x) { // move to matrix if possible (change hash a
   const SEXP *restrict px = SEXPPTR_RO(x);
   const R_xlen_t len_x = xlength(x);
   const R_xlen_t len_i = xlength(px[0]);
+  if (len_i > INT_MAX || (len_x > 0 && len_i > INT_MAX / len_x)) { // the row ids h[id] = (int) i + 1 and the (int) casts in allocMatrix below truncate above INT_MAX
+    error("Length of 'x' is too large. (Long vector not supported yet)");
+  }
   SEXP mlv = PROTECT(allocMatrix(INTSXP, (int)len_i, (int)len_x));
   for (R_xlen_t i = 0; i < len_x; ++i) {
     memcpy(INTEGER(mlv)+i*len_i, INTEGER(PROTECT(dupVecIndexOnlyR(px[i]))), (size_t)len_i*sizeof(int));
