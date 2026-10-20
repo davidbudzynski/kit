@@ -63,3 +63,13 @@ local({
                    info = "charToFact-0074.001 caller-defined sort ignored")
 })
 
+# issue #74: the unique table grows past its initial 256 slots.
+local({
+  set.seed(74)
+  x <- sample(paste0("s", 1:800), 5000L, TRUE)
+  expect_identical(charToFact(x), as.factor(x), info = "charToFact-0074.grow")
+  x <- sample(c(NA_character_, paste0("s", 1:800)), 5000L, TRUE)
+  expect_identical(charToFact(x), addNA(as.factor(x)),
+                   info = "charToFact-0074.grow-na")
+})
+

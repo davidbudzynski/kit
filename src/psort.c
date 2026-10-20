@@ -215,17 +215,19 @@ static SEXP rsortrev (SEXP x) {
 
 static SEXP dupVecSort(SEXP x) {
   const R_xlen_t n = xlength(x);
-  int K =8;
+  int K = 8;
   size_t M = 256;
+  size_t Mbase = 256;
+  int Kbase = 8;
   const size_t n2 = 2U * (size_t) n;
-  while (M < n2) {
-    M *= 2;
-    K++;
+  while (Mbase < n2) {
+    Mbase *= 2;
+    Kbase++;
   }
   R_xlen_t count = 0;
   size_t id = 0;
-  int *restrict h = (int*)calloc(M, sizeof(int));
-  int *restrict pans = (int*)calloc(n, sizeof(int));
+  int *restrict h = (int*)R_Calloc(M, int);
+  int *restrict pans = (int*)R_Calloc(n, int);
   const SEXP *restrict px = STRING_PTR_RO(x);
   for (int i = 0; i < n; ++i) {
     id = HASHSTR(px[i]);
@@ -239,9 +241,10 @@ static SEXP dupVecSort(SEXP x) {
     h[id] = (int) i + 1;
     pans[i]++;
     count++;
+    KIT_GROW_STR();
     sbl:;
   }
-  free(h);
+  R_Free(h);
   SEXP indx = PROTECT(allocVector(STRSXP, count));
   R_xlen_t ct = 0;
   for (int i = 0; ct < count; ++i) {
@@ -249,7 +252,7 @@ static SEXP dupVecSort(SEXP x) {
       SET_STRING_ELT(indx, ct++, px[i]);
     }
   }
-  free(pans);
+  R_Free(pans);
   UNPROTECT(1);
   return indx;
 }

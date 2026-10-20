@@ -213,3 +213,16 @@ local({
                    info = "psort-0074.002 caller-defined sort ignored, decreasing")
 })
 
+# issue #74: the unique table grows past its initial 256 slots.
+local({
+  set.seed(74)
+  x <- sample(paste0("s", 1:800), 20000L, TRUE)
+  expect_identical(psort(x), sort(x), info = "psort-0074.grow")
+  expect_identical(psort(x, decreasing = TRUE), sort(x, decreasing = TRUE),
+                   info = "psort-0074.grow-decreasing")
+  y <- sample(c(NA_character_, paste0("s", 1:800)), 20000L, TRUE)
+  expect_identical(psort(y), sort(y, na.last = NA), info = "psort-0074.grow-na")
+  expect_identical(psort(y, decreasing = TRUE), sort(y, decreasing = TRUE, na.last = NA),
+                   info = "psort-0074.grow-na-decreasing")
+})
+
