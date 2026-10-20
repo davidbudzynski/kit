@@ -630,8 +630,8 @@ local({
   xs <- list(
     sample(c(NA_integer_, -1000:1000), n, TRUE),
     sample(c(NA_real_, NaN, 0, runif(2000)), n, TRUE),
-    complex(real = sample(c(NA_real_, runif(1000)), n, TRUE),
-            imaginary = sample(c(NA_real_, runif(1000)), n, TRUE)),
+    complex(real = sample(c(NA_real_, NaN, runif(1000)), n, TRUE),
+            imaginary = sample(c(NA_real_, NaN, runif(1000)), n, TRUE)),
     sample(c(NA_character_, paste0("s", 1:800)), n, TRUE),
     sample(c(NA, TRUE, FALSE), n, TRUE)
   )
@@ -657,7 +657,13 @@ local({
     matrix(complex(real = sample(round(runif(30), 3), nr * nc, TRUE),
                    imaginary = sample(round(runif(30), 3), nr * nc, TRUE)), nr, nc),
     matrix(sample(c(NA_character_, paste0("s", 1:800)), nr * nc, TRUE), nr, nc),
-    matrix(sample(c(NA, TRUE, FALSE), nr * nc, TRUE), nr, nc)
+    matrix(sample(c(NA, TRUE, FALSE), nr * nc, TRUE), nr, nc),
+    # >192 distinct rows to grow the logical and complex row tables; NA/NaN
+    # entries exercise their rehash normalization.
+    unname(as.matrix(expand.grid(rep(list(c(FALSE, TRUE, NA)), 5)))),
+    unname(as.matrix(expand.grid(rep(list(c(0+0i, 1+0i, NA_complex_,
+                                             complex(real = NaN, imaginary = NaN),
+                                             0+1i)), 4))))
   )
   for (x in xs) {
     expect_identical(funique(x), unique(x), info = "funique-0074.grow-matrix")

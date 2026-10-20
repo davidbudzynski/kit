@@ -169,15 +169,8 @@ static SEXP topnLong(SEXP vec, const R_xlen_t len0, const bool dcr) {
 
 static SEXP topnRadix(SEXP vec, const int len0, const bool dcr, SEXP env) {
   SEXP prem = PROTECT(callToOrder(vec, "radix", dcr, TRUE, env));
-  SEXP ans = PROTECT(allocVector(UTYPEOF(prem), len0));
-  switch(UTYPEOF(prem)) {
-  case INTSXP: {
-    memcpy(INTEGER(ans), INTEGER(prem), len0 *sizeof(int));
-  } break;
-  case REALSXP: {
-    memcpy(REAL(ans), REAL(prem), len0 *sizeof(double));
-  } break;
-  }
+  SEXP ans = PROTECT(allocVector(INTSXP, len0));
+  memcpy(INTEGER(ans), INTEGER(prem), len0 *sizeof(int));
   UNPROTECT(2);
   return ans;
 }
