@@ -445,7 +445,7 @@ expect_identical(topn(ties, 1500L, decreasing = TRUE, hasna = TRUE),
                  info = "topn-0074.007 fallback ties/NA")
 
 # Worst case must not stay O(len1 * len0): 4e6 monotone elements take ~3 s
-# with the unbounded scan and well under 1 s with the heap fallback.
+# with the unbounded scan and well under 1 s with the radix fallback.
 t0 <- proc.time()[["elapsed"]]
 bounded <- topn(seq_len(4e6), 1500L, decreasing = TRUE, hasna = FALSE)
 elapsed <- proc.time()[["elapsed"]] - t0
