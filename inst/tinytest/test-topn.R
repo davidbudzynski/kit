@@ -418,7 +418,7 @@ local({
                    info = "topn-0074.001 caller-defined order ignored")
 })
 
-# issue #74: adversarial ordered input must fall back to the bounded heap.
+# issue #74: adversarial ordered input must fall back to the radix order() path.
 adv <- seq_len(1e5)
 expect_identical(topn(adv, 1500L, decreasing = TRUE, hasna = FALSE),
                  order(adv, decreasing = TRUE)[1:1500],

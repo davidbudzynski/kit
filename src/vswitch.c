@@ -154,7 +154,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
         UNPROTECT(1);
       } 
     }
-    ssize_t amask[len_values];
+    ssize_t *amask = (ssize_t*) R_alloc((size_t) len_values, sizeof(ssize_t));
     for (ssize_t i=0; i<len_values;++i) {
       if (isS4(po[i])) {
         error("S4 class objects for argument 'outputs' (item %zu) are not supported.", i+1);
@@ -190,7 +190,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
       int *restrict pans = LOGICAL(ans);
       const int *restrict pna = nonna ? LOGICAL(na) : NULL;
       ssize_t namask = len_na>1 ? SSIZE_MAX : 0;
-      int *ppo[len_values];
+      int **ppo = (int**) R_alloc((size_t) len_values, sizeof(int*));
       for (ssize_t i=0; i<len_values; ++i) ppo[i] = LOGICAL(po[i]);
       #define OUT_DEFAULT pans[j] = nonna ? pna[j & namask] : NA_LOGICAL
       #define OUT_SET(k) pans[j] = ppo[k][j & amask[k]]
@@ -214,7 +214,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
       int *restrict pans = INTEGER(ans);
       const int *restrict pna = nonna ? INTEGER(na) : NULL;
       ssize_t namask = len_na>1 ? SSIZE_MAX : 0;
-      int *ppo[len_values];
+      int **ppo = (int**) R_alloc((size_t) len_values, sizeof(int*));
       for (ssize_t i=0; i<len_values; ++i) ppo[i] = INTEGER(po[i]);
       #define OUT_DEFAULT pans[j] = nonna ? pna[j & namask] : NA_INTEGER
       #define OUT_SET(k) pans[j] = ppo[k][j & amask[k]]
@@ -238,7 +238,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
       double *restrict pans = REAL(ans);
       const double *restrict pna = nonna ? REAL(na) : NULL;
       ssize_t namask = len_na>1 ? SSIZE_MAX : 0;
-      double *ppo[len_values];
+      double **ppo = (double**) R_alloc((size_t) len_values, sizeof(double*));
       for (ssize_t i=0; i<len_values; ++i) ppo[i] = REAL(po[i]);
       #define OUT_DEFAULT pans[j] = nonna ? pna[j & namask] : NA_REAL
       #define OUT_SET(k) pans[j] = ppo[k][j & amask[k]]
@@ -263,7 +263,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
       const Rcomplex *restrict pna = nonna ? COMPLEX(na) : NULL;
       ssize_t namask = len_na>1 ? SSIZE_MAX : 0;
       Rcomplex NA_CPLX; NA_CPLX.r = NA_REAL; NA_CPLX.i = NA_REAL;
-      Rcomplex *ppo[len_values];
+      Rcomplex **ppo = (Rcomplex**) R_alloc((size_t) len_values, sizeof(Rcomplex*));
       for (ssize_t i=0; i<len_values; ++i) ppo[i] = COMPLEX(po[i]);
       #define OUT_DEFAULT pans[j] = nonna ? pna[j & namask] : NA_CPLX
       #define OUT_SET(k) pans[j] = ppo[k][j & amask[k]]
@@ -286,7 +286,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
     case STRSXP: {
       const SEXP *restrict pna = nonna ? STRING_PTR_RO(na) : NULL;
       ssize_t namask = len_na>1 ? SSIZE_MAX : 0;
-      const SEXP *ppo[len_values];
+      const SEXP **ppo = (const SEXP**) R_alloc((size_t) len_values, sizeof(SEXP*));
       for (ssize_t i=0; i<len_values; ++i) ppo[i] = STRING_PTR_RO(po[i]);
       #define OUT_DEFAULT SET_STRING_ELT(ans, j, nonna ? pna[j & namask] : NA_STRING)
       #define OUT_SET(k) SET_STRING_ELT(ans, j, ppo[k][j & amask[k]])
@@ -309,7 +309,7 @@ SEXP vswitchR(SEXP x, SEXP values, SEXP outputs, SEXP na, SEXP nthreads, SEXP ch
     case VECSXP: {
       const SEXP *restrict pna = nonna ? SEXPPTR_RO(na) : NULL;
       ssize_t namask = len_na>1 ? SSIZE_MAX : 0;
-      const SEXP *ppo[len_values];
+      const SEXP **ppo = (const SEXP**) R_alloc((size_t) len_values, sizeof(SEXP*));
       for (ssize_t i=0; i<len_values; ++i) ppo[i] = SEXPPTR_RO(po[i]);
       #define OUT_DEFAULT if (nonna) SET_VECTOR_ELT(ans, j, pna[j & namask])
       #define OUT_SET(k) SET_VECTOR_ELT(ans, j, ppo[k][j & amask[k]])
