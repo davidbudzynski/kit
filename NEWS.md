@@ -20,6 +20,10 @@
 
 ### Notes
 
+- Reduce peak memory in `funique`, `fduplicated`, `uniqLen`, `psort`, and `charToFact` by starting duplicate hash tables at 256 slots and growing them on demand (4x, capped at the previous full-size table) instead of allocating the full table up front. Rehashing re-reads the source values, so results are unchanged; high-cardinality inputs trade a small amount of speed for lower memory (#74).
+
+- Speed up `vswitch` for string and list outputs by scanning `x` once instead of once per value and fusing default/`na` writes into the match pass; single-value lookups also avoid a separate initialization pass. Atomic outputs keep the value-major vectorized pass, with the first value fused into initialization. Last-match-wins behavior for duplicate `values` is preserved, and mixed output item types now fail with a clear error (#74).
+
 - Bound the `topn` linear candidate scan: input ordered opposite to `decreasing` made every element replace the current worst and rescan all `n` candidates, so `n = 1500` on 2e7 elements took ~14.5 s. The scan now falls back to the existing radix `order()` path once its rescan work exceeds a few passes over the input, reducing that case to ~0.11 s while leaving random and small-`n` inputs on the fast path (#74).
 
 - Serialize `shareData` payloads directly to a raw vector instead of through a raw connection, removing one full-payload copy on write and connection overhead on read; the shared-memory format is unchanged (#74).
