@@ -202,3 +202,14 @@ x11 = rep(x10,3L)
 
   expect_identical(psort(x11,decreasing = TRUE,c.locale = FALSE), sort(x11,decreasing = TRUE), info="psort-0020.074")
 
+# issue #74: internal sort() must resolve in base, not in the caller's frame.
+local({
+  sort <- function(x, ...) rev(x)
+  expect_identical(psort(c("b", "a", "c", "a"), c.locale = FALSE),
+                   c("a", "a", "b", "c"),
+                   info = "psort-0074.001 caller-defined sort ignored")
+  expect_identical(psort(c("b", "a", "c", "a"), decreasing = TRUE, c.locale = FALSE),
+                   c("c", "b", "a", "a"),
+                   info = "psort-0074.002 caller-defined sort ignored, decreasing")
+})
+

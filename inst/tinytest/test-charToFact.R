@@ -56,3 +56,10 @@ x1 = sample(c(letters,LETTERS),1e2,TRUE)
 
   expect_identical(charToFact(c("a",NA,"aa")), addNA(as.factor(c("a",NA,"aa"))), info="charToFact-0021.015")
 
+# issue #74: internal sort() must resolve in base, not in the caller's frame.
+local({
+  sort <- function(x, ...) rev(x)
+  expect_identical(charToFact(c("a", "b", "a")), as.factor(c("a", "b", "a")),
+                   info = "charToFact-0074.001 caller-defined sort ignored")
+})
+

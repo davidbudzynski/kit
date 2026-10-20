@@ -166,6 +166,35 @@ static SEXP topnLong(SEXP vec, const R_xlen_t len0, const bool dcr) {
   UNPROTECT(1);
   return ans;
 }
+
+static SEXP topnRadix(SEXP vec, const int len0, const bool dcr, SEXP env) {
+  SEXP prem = PROTECT(callToOrder(vec, "radix", dcr, TRUE, env));
+  SEXP ans = PROTECT(allocVector(UTYPEOF(prem), len0));
+  switch(UTYPEOF(prem)) {
+  case INTSXP: {
+    memcpy(INTEGER(ans), INTEGER(prem), len0 *sizeof(int));
+  } break;
+  case REALSXP: {
+    memcpy(REAL(ans), REAL(prem), len0 *sizeof(double));
+  } break;
+  }
+  UNPROTECT(2);
+  return ans;
+}
+
+/* The linear scan rescans all len0 candidates after every replacement, so
+ * opposite-ordered input costs O(len1 * len0). Bail out to the radix path,
+ * which already handles large n, once the rescan work exceeds a few full
+ * passes over the input (#74). */
+#define TN_RESCAN_OR_RADIX() \
+  do { \
+    work += len0; \
+    if (work > budget) { \
+      UNPROTECT(1); \
+      return topnRadix(vec, len0, dcr, env); \
+    } \
+  } while (0)
+
 SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
   int len0 = asInteger(n);
   const R_xlen_t len1 = xlength(vec);
@@ -198,19 +227,10 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
     return topnLong(vec, len0, dcr);
   }
   if ( ((len0 > 2000 && !vhasna) || (len0 > 1500 && vhasna)) && (tvec == INTSXP || tvec == REALSXP)) {
-    SEXP prem = PROTECT(callToOrder(vec, "radix", dcr, TRUE, env));
-    SEXP ans = PROTECT(allocVector(UTYPEOF(prem), len0));
-    switch(UTYPEOF(prem)) {
-    case INTSXP: {
-      memcpy(INTEGER(ans), INTEGER(prem), len0 *sizeof(int));
-    } break;
-    case REALSXP: {
-      memcpy(REAL(ans), REAL(prem), len0 *sizeof(double));
-    } break;
-    }
-    UNPROTECT(2);
-    return ans;
+    return topnRadix(vec, len0, dcr, env);
   }
+  const R_xlen_t budget = 8 * len1;
+  R_xlen_t work = 0;
   SEXP ans = PROTECT(allocVector(INTSXP, len0));
   int *restrict pans = INTEGER(ans);
   int tmp;
@@ -235,6 +255,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] > min_value) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if ((min_value > pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) || pvec[pans[j]] == NA_INTEGER) {
                 min_value = pvec[pans[j]];
@@ -265,6 +286,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] > min_value) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if (min_value > pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) {
                 min_value = pvec[pans[j]];
@@ -304,6 +326,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] > min_value || ISNAN(min_value)) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if ((min_value > pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) || ISNAN(pvec[pans[j]])) {
                 min_value = pvec[pans[j]];
@@ -334,6 +357,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] > min_value) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if (min_value > pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) {
                 min_value = pvec[pans[j]];
@@ -378,6 +402,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] < min_value || min_value == NA_INTEGER) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if (((min_value < pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) && min_value != NA_INTEGER) || pvec[pans[j]] == NA_INTEGER) {
                 min_value = pvec[pans[j]];
@@ -411,6 +436,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] < min_value) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if (min_value < pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) {
                 min_value = pvec[pans[j]];
@@ -450,6 +476,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] < min_value || ISNAN(min_value)) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if ((min_value < pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) || ISNAN(pvec[pans[j]])) {
                 min_value = pvec[pans[j]];
@@ -480,6 +507,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
           if (pvec[i] < min_value) {
             min_value = pvec[i];
             pans[idx] = i;
+            TN_RESCAN_OR_RADIX();
             for (j = 0; j <len0; ++j) {
               if (min_value < pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) {
                 min_value = pvec[pans[j]];

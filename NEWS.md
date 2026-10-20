@@ -2,6 +2,8 @@
 
 ### Bug Fixes
 
+- Evaluate the internal `order()`/`sort()` calls in `topn`, `psort`, and `charToFact` in the base environment. A caller-defined `order`/`sort` could previously shadow them and make `topn` return out-of-bounds indices or `psort`/`charToFact` error or sort incorrectly (#74).
+
 - Fix shared-memory lifetime and error-path safety in `shareData()`: POSIX mapping names are now owned copies, long-vector lengths, allocation sizes, and existing mapping sizes are checked, finalizer verbosity is per mapping, failed mappings release descriptors, mappings, and temporary state, reader cleanup is unwind-safe, and finalizers verify mapping identity before unlinking owned names (#55).
 
 - Fix segfault in `vswitch`/`nswitch` on length-0 character input: the character encoding path dereferenced element 0 without checking length. The encoding check is now skipped for empty `x` and `isMixEnc`/`enc2UTF8` handle empty input safely, with no overhead on the fast path (#66).
@@ -17,6 +19,10 @@
 - Guard the mixed-type data.frame paths in `funique`/`fduplicated` (`dupDataFrameR`), `uniqLen` (`dupLenDataFrameR`), and `countOccur` (`countOccurDataFrameR`): with more than `INT_MAX` rows the row count was truncated to `int` inside `allocMatrix()`, so 2^31-2^32 rows errored with R's confusing "negative extents to matrix" message (and above 2^32 rows the mixed `funique`/`uniqLen` logical-column case could write out of bounds, which the per-column 2^30 guard only prevents for other types). These paths now stop up front with the standard "Long vector not supported yet" error, before any allocation, when the rows exceed `INT_MAX` or the matrix would exceed `INT_MAX` cells — the same bound the all-same-type branch has applied to `dfToMatrix()` since the length audit (#61), so the same data.frame now fails the same way regardless of whether its columns share one type (#82).
 
 ### Notes
+
+- Bound the `topn` linear candidate scan: input ordered opposite to `decreasing` made every element replace the current worst and rescan all `n` candidates, so `n = 1500` on 2e7 elements took ~14.5 s. The scan now falls back to the existing radix `order()` path once its rescan work exceeds a few passes over the input, reducing that case to ~0.11 s while leaving random and small-`n` inputs on the fast path (#74).
+
+- Serialize `shareData` payloads directly to a raw vector instead of through a raw connection, removing one full-payload copy on write and connection overhead on read; the shared-memory format is unchanged (#74).
 
 - Reduce `topn` memory use on long vectors (more than `INT_MAX` elements): the long path allocated a full-length radix `order()` index (~8 x length bytes, ~17 GB for a 2^31-element input, only to return n indices) and is replaced by a bounded heap of the n best (value, index) entries, so memory is now proportional to n; unmaterialized ALTREP inputs are read element-wise without being materialized. The result is unchanged — double indices like `order(vec, method="radix", na.last=TRUE)[1:n]`, ties and missing values keeping input order regardless of `hasna` — and `decreasing=TRUE` now works on such inputs, where the `order()` path errored with base R's "long vectors not supported" (#83).
 

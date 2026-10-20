@@ -289,6 +289,7 @@ static inline int getIndex(SEXP ptr, const SEXP *restrict cmp, int *lkpTbl) {
   }
 }
 
+/* Evaluate in base so caller-defined sort()/order() cannot shadow these calls. */
 static SEXP callToSort (SEXP x, const char* method, SEXP env) {
   SEXP call = PROTECT(allocVector(LANGSXP, 4));
   SETCAR(call, STR_SORT);
@@ -305,7 +306,7 @@ static SEXP callToSort (SEXP x, const char* method, SEXP env) {
   SETCAR(s, ScalarLogical(0));
   SET_TAG(s, STR_NALAST);
   
-  SEXP out = PROTECT(eval(call, env));
+  SEXP out = PROTECT(eval(call, R_BaseEnv));
   UNPROTECT(3);
   return out;
 }
@@ -330,7 +331,7 @@ static SEXP callToSort2 (SEXP x, const char* method, const int desc, const int n
   SETCAR(s, ScalarLogical(desc));
   SET_TAG(s, STR_DECREA);
   
-  SEXP out = PROTECT(eval(call, env));
+  SEXP out = PROTECT(eval(call, R_BaseEnv));
   UNPROTECT(3);
   return out;
 }
@@ -355,7 +356,7 @@ SEXP callToOrder (SEXP x, const char* method, bool desc, bool na, SEXP env) {
   SETCAR(s, ScalarLogical(desc));
   SET_TAG(s, STR_DECREA);
   
-  SEXP out = PROTECT(eval(call, env));
+  SEXP out = PROTECT(eval(call, R_BaseEnv));
   UNPROTECT(3);
   return out;
 }
