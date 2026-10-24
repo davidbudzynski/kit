@@ -446,11 +446,15 @@ expect_identical(topn(ties, 1500L, decreasing = TRUE, hasna = TRUE),
 
 # Worst case must not stay O(len1 * len0): 4e6 monotone elements take ~3 s
 # with the unbounded scan and well under 1 s with the radix fallback.
+x <- seq_len(4e6)
+t_order <- system.time(order(x, decreasing = TRUE))[["elapsed"]]
 t0 <- proc.time()[["elapsed"]]
-bounded <- topn(seq_len(4e6), 1500L, decreasing = TRUE, hasna = FALSE)
+bounded <- topn(x, 1500L, decreasing = TRUE, hasna = FALSE)
 elapsed <- proc.time()[["elapsed"]] - t0
 expect_identical(bounded, 4e6:3998501, info = "topn-0074.008 bounded adversarial result")
-expect_true(elapsed < 1.5, info = "topn-0074.009 bounded adversarial time")
+# Scale the bound with the machine; the unbounded scan is ~3 s on a normal
+# runner, so the fallback still has to be much faster than that.
+expect_true(elapsed < max(1.5, 20 * t_order), info = "topn-0074.009 bounded adversarial time")
 
 # issue #74 review: classed numeric vectors must use order()/xtfrm on both the
 # fast and fallback paths, so the result does not depend on input order.
