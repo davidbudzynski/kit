@@ -219,6 +219,12 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
   if (len1 > INT_MAX && (tvec == INTSXP || tvec == REALSXP)) {
     return topnLong(vec, len0, dcr);
   }
+  // Classed vectors must follow order()/xtfrm on every non-long path so the
+  // adversarial fallback cannot return a different ordering than the fast path.
+  if (getAttrib(vec, R_ClassSymbol) != R_NilValue &&
+      (tvec == INTSXP || tvec == REALSXP)) {
+    return topnRadix(vec, len0, dcr, env);
+  }
   if ( ((len0 > 2000 && !vhasna) || (len0 > 1500 && vhasna)) && (tvec == INTSXP || tvec == REALSXP)) {
     return topnRadix(vec, len0, dcr, env);
   }

@@ -452,3 +452,16 @@ elapsed <- proc.time()[["elapsed"]] - t0
 expect_identical(bounded, 4e6:3998501, info = "topn-0074.008 bounded adversarial result")
 expect_true(elapsed < 1.5, info = "topn-0074.009 bounded adversarial time")
 
+# issue #74 review: classed numeric vectors must use order()/xtfrm on both the
+# fast and fallback paths, so the result does not depend on input order.
+local({
+  registerS3method("xtfrm", "kit_topn_class", function(x) -unclass(x))
+  x <- structure(seq_len(1e5), class = "kit_topn_class")
+  set.seed(74)
+  xr <- structure(sample(unclass(x)), class = "kit_topn_class")
+  for (v in list(x, xr)) {
+    expect_identical(topn(v, 10L, decreasing = TRUE, hasna = FALSE),
+                     order(v, decreasing = TRUE, na.last = TRUE)[1:10],
+                     info = "topn-0074.classed-order")
+  }
+})
