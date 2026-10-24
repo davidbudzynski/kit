@@ -74,8 +74,13 @@ share_payloads <- list(
 )
 for (i in seq_along(share_payloads)) {
   map <- paste0("/kit74-", Sys.getpid(), "-", i)
-  handle <- tryCatch(shareData(share_payloads[[i]], map), error = function(err) NULL)
-  if (is.null(handle)) exit_file("shared memory unavailable - skipping direct serialization tests")
+  handle <- tryCatch(shareData(share_payloads[[i]], map), error = function(err) err)
+  if (inherits(handle, "error")) {
+    # Only the first failure can mean shared memory is unavailable; after that
+    # an error is a real serialization/round-trip bug and must not be skipped.
+    if (i == 1L) exit_file("shared memory unavailable - skipping direct serialization tests")
+    stop(handle)
+  }
   expect_identical(getData(map), share_payloads[[i]],
                    info = paste0("share-0074.", sprintf("%03d", i)))
   expect_true(clearData(handle), info = paste0("share-0074.clear.", i))
