@@ -167,8 +167,8 @@ static SEXP topnLong(SEXP vec, const R_xlen_t len0, const bool dcr) {
   return ans;
 }
 
-static SEXP topnRadix(SEXP vec, const int len0, const bool dcr, SEXP env) {
-  SEXP prem = PROTECT(callToOrder(vec, "radix", dcr, TRUE, env));
+static SEXP topnRadix(SEXP vec, const int len0, const bool dcr) {
+  SEXP prem = PROTECT(callToOrder(vec, "radix", dcr, TRUE));
   SEXP ans = PROTECT(allocVector(INTSXP, len0));
   memcpy(INTEGER(ans), INTEGER(prem), len0 *sizeof(int));
   UNPROTECT(2);
@@ -183,12 +183,14 @@ static SEXP topnRadix(SEXP vec, const int len0, const bool dcr, SEXP env) {
   do { \
     work += len0; \
     if (work > budget) { \
-      UNPROTECT(1); \
-      return topnRadix(vec, len0, dcr, env); \
+      SEXP radix_ans = topnRadix(vec, len0, dcr); \
+      UNPROTECT(1 + nprotect); \
+      return radix_ans; \
     } \
   } while (0)
 
 SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
+  (void) env; // kept for the registered C API; internal calls use the base environment
   int len0 = asInteger(n);
   const R_xlen_t len1 = xlength(vec);
   if (isS4(vec)) {
@@ -208,8 +210,8 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
     error("Argument 'hasna' must be TRUE or FALSE and length 1.");
   }
   const bool dcr = asLogical(dec);
-  const SEXPTYPE tvec = UTYPEOF(vec);
-  const bool vhasna = asLogical(hasna);
+  SEXPTYPE tvec = UTYPEOF(vec);
+  bool vhasna = asLogical(hasna);
   // len1 > INT_MAX: ans is INTSXP and cannot hold indices into a long vector;
   // the bounded-heap selection below returns double indices like base::order()
   // with missing values last (order(na.last = TRUE) semantics) and uses memory
@@ -219,14 +221,31 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
   if (len1 > INT_MAX && (tvec == INTSXP || tvec == REALSXP)) {
     return topnLong(vec, len0, dcr);
   }
-  // Classed vectors must follow order()/xtfrm on every non-long path so the
-  // adversarial fallback cannot return a different ordering than the fast path.
+  // Classed vectors must follow order()/xtfrm on every non-long path. Apply
+  // xtfrm once and keep the fast selector: for identity methods (Date,
+  // POSIXct, factor) this avoids sorting the whole vector just to return a
+  // few indices, and it still matches order() for custom classes.
+  int nprotect = 0;
   if (getAttrib(vec, R_ClassSymbol) != R_NilValue &&
       (tvec == INTSXP || tvec == REALSXP)) {
-    return topnRadix(vec, len0, dcr, env);
+    SEXP call = PROTECT(lang2(install("xtfrm"), vec));
+    SEXP xf = PROTECT(eval(call, R_BaseEnv));
+    UNPROTECT(1);
+    if ((UTYPEOF(xf) == INTSXP || UTYPEOF(xf) == REALSXP) &&
+        XLENGTH(xf) == len1) {
+      vec = xf;
+      tvec = UTYPEOF(vec);
+      vhasna = true; // order() always places missing values last
+      nprotect = 1;
+    } else {
+      UNPROTECT(1);
+      return topnRadix(vec, len0, dcr);
+    }
   }
   if ( ((len0 > 2000 && !vhasna) || (len0 > 1500 && vhasna)) && (tvec == INTSXP || tvec == REALSXP)) {
-    return topnRadix(vec, len0, dcr, env);
+    SEXP ans = topnRadix(vec, len0, dcr);
+    UNPROTECT(nprotect);
+    return ans;
   }
   const R_xlen_t budget = 8 * len1;
   R_xlen_t work = 0;
@@ -531,6 +550,6 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
       error("Type %s is not supported.", type2char(tvec));
     }
   }
-  UNPROTECT(1);
+  UNPROTECT(1 + nprotect);
   return ans;
 }

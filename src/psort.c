@@ -293,7 +293,7 @@ static inline int getIndex(SEXP ptr, const SEXP *restrict cmp, int *lkpTbl) {
 }
 
 /* Evaluate in base so caller-defined sort()/order() cannot shadow these calls. */
-static SEXP callToSort (SEXP x, const char* method, SEXP env) {
+static SEXP callToSort (SEXP x, const char* method) {
   SEXP call = PROTECT(allocVector(LANGSXP, 4));
   SETCAR(call, STR_SORT);
   
@@ -314,7 +314,7 @@ static SEXP callToSort (SEXP x, const char* method, SEXP env) {
   return out;
 }
 
-static SEXP callToSort2 (SEXP x, const char* method, const int desc, const int na, SEXP env) {
+static SEXP callToSort2 (SEXP x, const char* method, const int desc, const int na) {
   SEXP call = PROTECT(allocVector(LANGSXP, 5));
   SETCAR(call, STR_SORT);
   
@@ -339,7 +339,7 @@ static SEXP callToSort2 (SEXP x, const char* method, const int desc, const int n
   return out;
 }
 
-SEXP callToOrder (SEXP x, const char* method, bool desc, bool na, SEXP env) {
+SEXP callToOrder (SEXP x, const char* method, bool desc, bool na) {
   SEXP call = PROTECT(allocVector(LANGSXP, 5));
   SETCAR(call, STR_ORDER);
   
@@ -370,6 +370,7 @@ SEXP callToOrder (SEXP x, const char* method, bool desc, bool na, SEXP env) {
 
 SEXP cpsortR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, SEXP index, SEXP clocale) {
 
+  (void) env; // kept for the registered C API; internal calls use the base environment
   if (!IS_BOOL(decreasing)) {
     error("Argument 'decreasing' must be TRUE or FALSE.");
   }
@@ -400,11 +401,11 @@ SEXP cpsortR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, SEXP
   
   const int early = xlen == n;
   SEXP valSorted = early ? (
-    cindex ? PROTECT(callToOrder(uVals, "shell", dcr, na_pos, env)) : 
+    cindex ? PROTECT(callToOrder(uVals, "shell", dcr, na_pos)) :
              (cl ? (dcr ? PROTECT(rsortrev(uVals)) : PROTECT(rsort(uVals))) :
-                   PROTECT(callToSort2(uVals, "quick", dcr, na_pos, env)))
+                   PROTECT(callToSort2(uVals, "quick", dcr, na_pos)))
   ) : ( cl ? PROTECT(rsort(uVals)) : 
-             PROTECT(callToSort(uVals, "quick", env)));
+             PROTECT(callToSort(uVals, "quick")));
 
   /*if (early && cindex) {
     UNPROTECT(2);
@@ -555,6 +556,7 @@ SEXP cpsortR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, SEXP
 
 SEXP charToFactR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, SEXP addNA) {
   
+  (void) env; // kept for the registered C API; internal calls use the base environment
   if (!IS_BOOL(decreasing)) {
     error("Argument 'decreasing' must be TRUE or FALSE.");
   }
@@ -579,7 +581,7 @@ SEXP charToFactR (SEXP x, SEXP decreasing, SEXP nthread, SEXP nalast, SEXP env, 
   const int xlen = (int)XLENGTH(x);
   SEXP uVals = PROTECT(dupVecSort(x));
   const int n = (int)XLENGTH(uVals);
-  SEXP valSorted = PROTECT(callToSort2(uVals, "quick", dcr, 1, env));
+  SEXP valSorted = PROTECT(callToSort2(uVals, "quick", dcr, 1));
   SEXP *restrict pvalSorted = (SEXP*)STRING_PTR_RO(valSorted);
   
   int NAidx = -1;

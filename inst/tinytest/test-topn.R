@@ -469,3 +469,34 @@ local({
                      info = "topn-0074.classed-order")
   }
 })
+
+# issue #74 review: identity xtfrm classes (Date/POSIXct/factor) must keep the
+# small-n fast path while still matching order()/xtfrm exactly.
+local({
+  d <- as.Date("2020-01-01") + c(10, 1, 5, 3, NA)
+  o <- order(d, decreasing = TRUE, na.last = TRUE)
+  expect_identical(topn(d, 2L), o[1:2], info = "topn-0074.date-index")
+  expect_identical(topn(d, 2L, index = FALSE), d[o[1:2]],
+                   info = "topn-0074.date-values")
+  expect_identical(topn(d, 2L, decreasing = FALSE, hasna = FALSE),
+                   order(d, decreasing = FALSE, na.last = TRUE)[1:2],
+                   info = "topn-0074.date-missing")
+
+  p <- as.POSIXct("2020-01-01", tz = "UTC") + c(10, 1, 5, 3)
+  expect_identical(topn(p, 2L), order(p, decreasing = TRUE, na.last = TRUE)[1:2],
+                   info = "topn-0074.posixct")
+
+  f <- factor(c("b", "a", "c", "a"), levels = c("a", "b", "c"))
+  expect_identical(topn(f, 2L), order(f, decreasing = TRUE, na.last = TRUE)[1:2],
+                   info = "topn-0074.factor")
+})
+
+# issue #74 review: classed vectors that hit the linear-scan budget must still
+# match order() after the xtfrm transform.
+local({
+  registerS3method("xtfrm", "kit_topn_budget", function(x) unclass(x))
+  x <- structure(seq_len(1e5), class = "kit_topn_budget")
+  expect_identical(topn(x, 1500L, decreasing = TRUE, hasna = TRUE),
+                   order(x, decreasing = TRUE, na.last = TRUE)[1:1500],
+                   info = "topn-0074.classed-budget")
+})

@@ -186,7 +186,7 @@ KIT_DEFINE_ROW_GROW(real, double, kit_hash_rows_real)
 KIT_DEFINE_ROW_GROW(cplx, Rcomplex, kit_hash_rows_cplx)
 KIT_DEFINE_ROW_GROW(str, SEXP, kit_hash_rows_str)
 
-#define KIT_GROW_ROWS() do { if (count > M - (M >> 2)) { \
+#define KIT_GROW_ROWS() do { if ((size_t) count > M - (M >> 2)) { \
   size_t Mnew = M << 2; int Knew = K + 2; \
   if (Mnew > Mbase) { Mnew = Mbase; Knew = Kbase; } \
   if (Mnew > M) { h = grow(&rowctx, h, M, Mnew, Knew); M = Mnew; K = Knew; } \
@@ -274,22 +274,22 @@ static inline int *kit_rehash_str(const SEXP *restrict px, int *restrict h,
   return h2;
 }
 
-#define KIT_GROW_INT()  do { if (count > M - (M >> 2)) { \
+#define KIT_GROW_INT()  do { if ((size_t) count > M - (M >> 2)) { \
   size_t Mnew = M << 2; int Knew = K + 2; \
   if (Mnew > Mbase) { Mnew = Mbase; Knew = Kbase; } \
   if (Mnew > M) { h = kit_rehash_int(px, h, M, Mnew, Knew); M = Mnew; K = Knew; } \
 } } while (0)
-#define KIT_GROW_REAL() do { if (count > M - (M >> 2)) { \
+#define KIT_GROW_REAL() do { if ((size_t) count > M - (M >> 2)) { \
   size_t Mnew = M << 2; int Knew = K + 2; \
   if (Mnew > Mbase) { Mnew = Mbase; Knew = Kbase; } \
   if (Mnew > M) { h = kit_rehash_real(px, h, M, Mnew, Knew); M = Mnew; K = Knew; } \
 } } while (0)
-#define KIT_GROW_CPLX() do { if (count > M - (M >> 2)) { \
+#define KIT_GROW_CPLX() do { if ((size_t) count > M - (M >> 2)) { \
   size_t Mnew = M << 2; int Knew = K + 2; \
   if (Mnew > Mbase) { Mnew = Mbase; Knew = Kbase; } \
   if (Mnew > M) { h = kit_rehash_cplx(px, h, M, Mnew, Knew); M = Mnew; K = Knew; } \
 } } while (0)
-#define KIT_GROW_STR()  do { if (count > M - (M >> 2)) { \
+#define KIT_GROW_STR()  do { if ((size_t) count > M - (M >> 2)) { \
   size_t Mnew = M << 2; int Knew = K + 2; \
   if (Mnew > Mbase) { Mnew = Mbase; Knew = Kbase; } \
   if (Mnew > M) { h = kit_rehash_str(px, h, M, Mnew, Knew); M = Mnew; K = Knew; } \
@@ -299,7 +299,7 @@ static inline int *kit_rehash_str(const SEXP *restrict px, int *restrict h,
 #define IS_LOGICAL(x) (isLogical(x) && XLENGTH(x)==1)
 
 extern SEXP addColToDataFrame(SEXP df, SEXP mcol, SEXP coln);
-extern SEXP callToOrder (SEXP x, const char* method, bool desc, bool na, SEXP env);
+extern SEXP callToOrder (SEXP x, const char* method, bool desc, bool na);
 extern SEXP charToFactR(SEXP x, SEXP decreasingArg, SEXP nthread, SEXP nalast, SEXP env, SEXP addNA);
 extern SEXP countR(SEXP x, SEXP y);
 extern SEXP countNAR(SEXP x);

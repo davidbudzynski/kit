@@ -10,6 +10,8 @@
 
 - Fix `.onAttach`/`.onLoad` crash on bad `kit.nThread` (`NULL`/`NA`/length != 1): the option is now sanitized to `1L`, the default is restored via `is.null(getOption())`, and the startup message only prints in interactive sessions (#56).
 
+- Keep `nswitch`'s per-output recycle mask on the heap instead of the C stack, matching `vswitch`, so a very large number of value/output pairs cannot overflow the stack (#74).
+
 - Fix `shareData`/`getData`/`clearData` input validation: bad `map_name` (`""`/`NA`/length != 1/non-character) and `verbose` (`NA`/non-logical/length != 1) now fail fast in R with a clear message instead of reaching `shm_open` and its cryptic error; connections are closed via `on.exit` even when `serialize`/`unserialize` fails (#59).
 
 - Audit compiled length handling for 64-bit long vectors: `IS_BOOL`/`IS_LOGICAL` and the character `psort`/`charToFact` paths now use `XLENGTH()` (long character vectors are refused with the standard "Long vector not supported yet" error before any data is read), `funique`/`uniqLen` handle > 2^31 elements for factors and logicals, `topn` on long inputs returns double indices like `base::order`, `subSetRowMatrix` row indexing no longer overflows for matrices with >= 2^31 cells, and byte-size casts that truncated above 4 GiB are fixed (#61).
@@ -24,7 +26,7 @@
 
 - Speed up `vswitch` for string and list outputs by scanning `x` once instead of once per value and fusing default/`na` writes into the match pass; single-value lookups also avoid a separate initialization pass. Atomic outputs keep the value-major vectorized pass, with the first value fused into initialization. Last-match-wins behavior for duplicate `values` is preserved, mixed output item types now fail with a clear error, and list-output scratch arrays are heap allocated so large outputs no longer exhaust the C stack (#74).
 
-- Bound the `topn` linear candidate scan: input ordered opposite to `decreasing` made every element replace the current worst and rescan all `n` candidates, so `n = 1500` on 2e7 elements took ~14.5 s. The scan now falls back to the existing radix `order()` path once its rescan work exceeds a few passes over the input, reducing that case to ~0.11 s while leaving random and small-`n` inputs on the fast path. The fallback allocates a full-length `order` index, so peak memory is higher on adversarial inputs. Classed numeric vectors now follow `order()`/`xtfrm` on all non-long paths, so their result no longer depends on whether the fallback triggers (#74).
+- Bound the `topn` linear candidate scan: input ordered opposite to `decreasing` made every element replace the current worst and rescan all `n` candidates, so `n = 1500` on 2e7 elements took ~14.5 s. The scan now falls back to the existing radix `order()` path once its rescan work exceeds a few passes over the input, reducing that case to ~0.11 s while leaving random and small-`n` inputs on the fast path. The fallback allocates a full-length `order` index, so peak memory is higher on adversarial inputs. Classed numeric vectors have `xtfrm` applied once and then use the same fast selector, so a custom class ordering matches `order()` without forcing a full radix sort for identity classes such as `Date`, `POSIXct`, and factors (#74).
 
 - Serialize `shareData` payloads directly to a raw vector instead of through a raw connection, removing one full-payload copy on write and connection overhead on read; the shared-memory format is unchanged (#74).
 
