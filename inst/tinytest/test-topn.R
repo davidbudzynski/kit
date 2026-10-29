@@ -411,3 +411,111 @@ x7 = seq.int(1e4)
 
   expect_identical(topn(as.numeric(x7),1e4,decreasing=FALSE), order(as.numeric(x7), decreasing=FALSE), info="topn-0001.131")
 
+# issue #74: internal order() must resolve in base, not in the caller's frame.
+local({
+  order <- function(...) seq_along(..1)
+  expect_identical(topn(seq_len(3000), 2001L, decreasing = TRUE), 3000:1000,
+                   info = "topn-0074.001 caller-defined order ignored")
+})
+
+# issue #74: adversarial ordered input must fall back to the radix order() path.
+adv <- seq_len(1e5)
+expect_identical(topn(adv, 1500L, decreasing = TRUE, hasna = FALSE),
+                 order(adv, decreasing = TRUE)[1:1500],
+                 info = "topn-0074.002 fallback n=1500")
+expect_identical(topn(adv, 1501L, decreasing = TRUE, hasna = FALSE)[1:1500],
+                 topn(adv, 1500L, decreasing = TRUE, hasna = FALSE),
+                 info = "topn-0074.003 fallback/radix boundary")
+expect_identical(typeof(topn(adv, 1500L, decreasing = TRUE, hasna = FALSE)),
+                 "integer", info = "topn-0074.004 fallback output type")
+
+dbl <- c(seq_len(1e5) + 0.5, NA_real_, NaN)
+expect_identical(topn(dbl, 1500L, decreasing = TRUE, hasna = TRUE),
+                 order(dbl, decreasing = TRUE, na.last = TRUE)[1:1500],
+                 info = "topn-0074.005 fallback doubles with NA/NaN")
+
+rev_adv <- rev(seq_len(1e5))
+expect_identical(topn(rev_adv, 2000L, decreasing = FALSE, hasna = FALSE),
+                 order(rev_adv, decreasing = FALSE)[1:2000],
+                 info = "topn-0074.006 fallback ascending")
+
+ties <- rep(c(2L, 1L, 2L, NA_integer_), length.out = 1e5)
+expect_identical(topn(ties, 1500L, decreasing = TRUE, hasna = TRUE),
+                 order(ties, decreasing = TRUE, na.last = TRUE)[1:1500],
+                 info = "topn-0074.007 fallback ties/NA")
+
+# Worst case must not stay O(len1 * len0): 4e6 monotone elements take ~3 s
+# with the unbounded scan and well under 1 s with the radix fallback.
+x <- seq_len(4e6)
+t_order <- system.time(order(x, decreasing = TRUE))[["elapsed"]]
+t0 <- proc.time()[["elapsed"]]
+bounded <- topn(x, 1500L, decreasing = TRUE, hasna = FALSE)
+elapsed <- proc.time()[["elapsed"]] - t0
+expect_identical(bounded, 4e6:3998501, info = "topn-0074.008 bounded adversarial result")
+# Scale the bound with the machine; the unbounded scan is ~3 s on a normal
+# runner, so the fallback still has to be much faster than that.
+expect_true(elapsed < max(1.5, 20 * t_order), info = "topn-0074.009 bounded adversarial time")
+
+# issue #74 review: classed numeric vectors must use order()/xtfrm on both the
+# fast and fallback paths, so the result does not depend on input order.
+local({
+  registerS3method("xtfrm", "kit_topn_class", function(x) -unclass(x))
+  x <- structure(seq_len(1e5), class = "kit_topn_class")
+  set.seed(74)
+  xr <- structure(sample(unclass(x)), class = "kit_topn_class")
+  for (v in list(x, xr)) {
+    expect_identical(topn(v, 10L, decreasing = TRUE, hasna = FALSE),
+                     order(v, decreasing = TRUE, na.last = TRUE)[1:10],
+                     info = "topn-0074.classed-order")
+  }
+})
+
+# issue #74 review: identity xtfrm classes (Date/POSIXct/factor) must keep the
+# small-n fast path while still matching order()/xtfrm exactly.
+local({
+  d <- as.Date("2020-01-01") + c(10, 1, 5, 3, NA)
+  o <- order(d, decreasing = TRUE, na.last = TRUE)
+  expect_identical(topn(d, 2L), o[1:2], info = "topn-0074.date-index")
+  expect_identical(topn(d, 2L, index = FALSE), d[o[1:2]],
+                   info = "topn-0074.date-values")
+  expect_identical(topn(d, 2L, decreasing = FALSE, hasna = FALSE),
+                   order(d, decreasing = FALSE, na.last = TRUE)[1:2],
+                   info = "topn-0074.date-missing")
+
+  p <- as.POSIXct("2020-01-01", tz = "UTC") + c(10, 1, 5, 3)
+  expect_identical(topn(p, 2L), order(p, decreasing = TRUE, na.last = TRUE)[1:2],
+                   info = "topn-0074.posixct")
+
+  f <- factor(c("b", "a", "c", "a"), levels = c("a", "b", "c"))
+  expect_identical(topn(f, 2L), order(f, decreasing = TRUE, na.last = TRUE)[1:2],
+                   info = "topn-0074.factor")
+})
+
+# issue #74 review: classed vectors that hit the linear-scan budget must still
+# match order() after the xtfrm transform.
+local({
+  registerS3method("xtfrm", "kit_topn_budget", function(x) unclass(x))
+  x <- structure(seq_len(1e5), class = "kit_topn_budget")
+  expect_identical(topn(x, 1500L, decreasing = TRUE, hasna = TRUE),
+                   order(x, decreasing = TRUE, na.last = TRUE)[1:1500],
+                   info = "topn-0074.classed-budget")
+})
+
+# issue #74 review: the xtfrm result must stay protected while the selector
+# allocates. gctorture makes the missing PROTECT deterministic.
+local({
+  registerS3method("xtfrm", "kit_topn_gc", function(x) as.integer(unclass(x)))
+  x <- structure(as.numeric(1:100), class = "kit_topn_gc")
+  expected_big <- order(x, decreasing = TRUE)[1:100]
+  expected_small <- order(x, decreasing = TRUE)[1:5]
+  check <- function() {
+    gctorture(TRUE)
+    on.exit(gctorture(FALSE), add = TRUE)
+    big <- topn(x, 100L)
+    small <- topn(x, 5L)
+    gctorture(FALSE)
+    expect_identical(big, expected_big, info = "topn-0074.classed-gctorture")
+    expect_identical(small, expected_small, info = "topn-0074.classed-gctorture-small")
+  }
+  check()
+})

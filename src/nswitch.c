@@ -72,7 +72,7 @@ SEXP nswitchR(SEXP x, SEXP na, SEXP nthreads, SEXP chkenc, SEXP args) {
       UNPROTECT(1);
     }
   }
-  ssize_t amask[n];
+  ssize_t *amask = (ssize_t*) R_alloc((size_t) n, sizeof(ssize_t));
   for (ssize_t i=0; i<n;++i) {
     if (isS4(PTR_ETL(args, 2*i+1))) {
       error("S4 class objects for argument '...' (item %zu) are not supported.", i+1);

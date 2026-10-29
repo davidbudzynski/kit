@@ -1,5 +1,5 @@
 # Function calls
-charToFact  = function(x, decreasing=FALSE, addNA=TRUE, nThread=getOption("kit.nThread")) .Call(CcharToFactR, x, decreasing, nThread, NA, parent.frame(), addNA)
+charToFact  = function(x, decreasing=FALSE, addNA=TRUE, nThread=getOption("kit.nThread")) .Call(CcharToFactR, x, decreasing, nThread, NA, NULL, addNA)
 clearData   = function(x, verbose=FALSE) .Call("CclearMappingObjectR", x, checkVerbose(verbose))
 count       = function(x, value) .Call(CcountR, x, value)
 countNA     = function(x) .Call(CcountNAR, x)
@@ -26,7 +26,7 @@ pprod       = function(..., na.rm=FALSE) .Call(CpprodR, na.rm, if (...length() =
 prange      = function(..., na.rm=FALSE) .Call(CprangeR, na.rm, if (...length() == 1L && is.list(..1)) ..1 else list(...))
 psum        = function(..., na.rm=FALSE) .Call(CpsumR,  na.rm, if (...length() == 1L && is.list(..1)) ..1 else list(...))
 setlevels   = function(x, old = levels(x), new, skip_absent=FALSE) invisible(.Call(CsetlevelsR, x, old, new, skip_absent))
-topn        = function(vec, n=6L, decreasing=TRUE, hasna=TRUE,index=TRUE) if(index) .Call(CtopnR, vec, n, decreasing, hasna, parent.frame()) else vec[.Call(CtopnR, vec, n, decreasing, hasna, parent.frame())]
+topn        = function(vec, n=6L, decreasing=TRUE, hasna=TRUE,index=TRUE) if(index) .Call(CtopnR, vec, n, decreasing, hasna, NULL) else vec[.Call(CtopnR, vec, n, decreasing, hasna, NULL)]
 uniqLen     = function(x) .Call(CdupLenR, x)
 vswitch     = function(x, values, outputs, default=NULL, nThread=getOption("kit.nThread"), checkEnc = TRUE) .Call(CvswitchR, x, values, outputs, default, nThread, checkEnc)
 
@@ -56,7 +56,7 @@ pcount      = function(..., value) {
 
 psort = function(x, decreasing = FALSE, na.last = NA, nThread=getOption("kit.nThread"), c.locale = TRUE) {
   if (typeof(x) == "character") {
-    return(.Call(CcpsortR, x, decreasing, nThread, na.last,parent.frame(), FALSE, c.locale))
+    return(.Call(CcpsortR, x, decreasing, nThread, na.last, NULL, FALSE, c.locale))
   }
   warning("Function 'psort' was only implemented for character vectors. Defaulting to base::sort.")
   sort(x, decreasing = decreasing, na.last = na.last,method = if(c.locale) "radix" else "quick")
@@ -79,21 +79,15 @@ checkVerbose = function(verbose) {
 shareData = function(data, map_name, verbose=FALSE) {
   map_name = shmName(map_name)
   verbose = checkVerbose(verbose)
-  conn = rawConnection(raw(0L), "w")
-  on.exit(close(conn), add = TRUE)
-  serialize(data, conn)
-  seek(conn, 0L)
+  # raw serialization skips the extra full-payload connection copy (#74)
   .Call(
     "CcreateMappingObjectR", map_name, paste0(map_name,"_key"),
-    rawConnectionValue(conn), verbose
+    serialize(data, NULL), verbose
   )
 }
 
 getData = function(map_name, verbose=FALSE) {
   map_name = shmName(map_name)
   verbose = checkVerbose(verbose)
-  output = .Call("CgetMappingObjectR", map_name, paste0(map_name,"_key"), verbose)
-  conn = rawConnection(output,"r")
-  on.exit(close(conn), add = TRUE)
-  unserialize(conn)
+  unserialize(.Call("CgetMappingObjectR", map_name, paste0(map_name,"_key"), verbose))
 }

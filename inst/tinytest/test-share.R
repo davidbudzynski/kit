@@ -60,3 +60,28 @@ if (.Platform$OS.type != "windows") {
 } else {
   expect_true(clearData(first), info = "share-0055.010 owner cleanup")
 }
+
+# issue #74: direct serialize()/unserialize() must round-trip the same payloads
+# as the previous raw-connection path; the shared-memory format is unchanged.
+share_payloads <- list(
+  NULL,
+  raw(0),
+  as.raw(0:255),
+  list(a = NULL, b = integer(0), c = NaN, d = NA_real_),
+  factor(c("a", NA, "b"), levels = c("a", "b", "c")),
+  structure(1:3, class = "kit_payload", label = "x"),
+  data.frame(x = 1:3, y = I(list(1L, "a", NULL)))
+)
+for (i in seq_along(share_payloads)) {
+  map <- paste0("/kit74-", Sys.getpid(), "-", i)
+  handle <- tryCatch(shareData(share_payloads[[i]], map), error = function(err) err)
+  if (inherits(handle, "error")) {
+    # Only the first failure can mean shared memory is unavailable; after that
+    # an error is a real serialization/round-trip bug and must not be skipped.
+    if (i == 1L) exit_file("shared memory unavailable - skipping direct serialization tests")
+    stop(handle)
+  }
+  expect_identical(getData(map), share_payloads[[i]],
+                   info = paste0("share-0074.", sprintf("%03d", i)))
+  expect_true(clearData(handle), info = paste0("share-0074.clear.", i))
+}
