@@ -500,3 +500,22 @@ local({
                    order(x, decreasing = TRUE, na.last = TRUE)[1:1500],
                    info = "topn-0074.classed-budget")
 })
+
+# issue #74 review: the xtfrm result must stay protected while the selector
+# allocates. gctorture makes the missing PROTECT deterministic.
+local({
+  registerS3method("xtfrm", "kit_topn_gc", function(x) as.integer(unclass(x)))
+  x <- structure(as.numeric(1:100), class = "kit_topn_gc")
+  expected_big <- order(x, decreasing = TRUE)[1:100]
+  expected_small <- order(x, decreasing = TRUE)[1:5]
+  check <- function() {
+    gctorture(TRUE)
+    on.exit(gctorture(FALSE), add = TRUE)
+    big <- topn(x, 100L)
+    small <- topn(x, 5L)
+    gctorture(FALSE)
+    expect_identical(big, expected_big, info = "topn-0074.classed-gctorture")
+    expect_identical(small, expected_small, info = "topn-0074.classed-gctorture-small")
+  }
+  check()
+})

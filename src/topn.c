@@ -230,15 +230,14 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec, SEXP hasna, SEXP env) {
       (tvec == INTSXP || tvec == REALSXP)) {
     SEXP call = PROTECT(lang2(install("xtfrm"), vec));
     SEXP xf = PROTECT(eval(call, R_BaseEnv));
-    UNPROTECT(1);
     if ((UTYPEOF(xf) == INTSXP || UTYPEOF(xf) == REALSXP) &&
         XLENGTH(xf) == len1) {
       vec = xf;
       tvec = UTYPEOF(vec);
       vhasna = true; // order() always places missing values last
-      nprotect = 1;
+      nprotect = 2;
     } else {
-      UNPROTECT(1);
+      UNPROTECT(2);
       return topnRadix(vec, len0, dcr);
     }
   }
