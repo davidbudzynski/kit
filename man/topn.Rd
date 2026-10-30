@@ -2,24 +2,67 @@
 \alias{topn}
 \title{ Top N values index}
 \description{
-  \code{topn} is used to get the indices of the few values of an input. This is an extension of \code{\link{which.max}}/\code{\link{which.min}} which provide \emph{only} the first such index.
+  \code{topn} returns the indices (or values) of the \code{n} largest or
+  smallest values in a vector. This extends \code{\link{which.max}} and
+  \code{\link{which.min}}, which return only the first such index.
 
-  The output is the same as \code{order(vec)[1:n]}, but internally optimized not to sort the irrelevant elements of the input (and therefore much faster, for small \code{n} relative to input size).
+  The resulting order is the same as
+  \code{order(vec, decreasing = decreasing, na.last = TRUE)[1:n]} when
+  \code{hasna} is \code{TRUE} or \code{vec} has no missing values, but
+  \code{topn()} avoids sorting the whole input. It is therefore much faster
+  when \code{n} is small relative to the input size.
 }
 \usage{
 topn(vec, n=6L, decreasing=TRUE, hasna=TRUE, index=TRUE)
 }
 \arguments{
-  \item{vec}{ A numeric vector of type numeric or integer. Other types are not supported yet. }
-  \item{n}{ A positive integer value greater or equal to 1. }
-  \item{decreasing}{ A logical value (default \code{TRUE}) to indicate whether to sort \code{vec} in decreasing or increasing order. Equivalent to argument \code{decreasing} in function \code{base::order}. Please note that unlike \code{topn} default value in \code{base::order} is \code{FALSE}.}
-  \item{hasna}{ A logical value (default \code{TRUE}) to indicate whether \code{vec} contains \code{NA} values. }
-  \item{index}{ A logical value (default \code{TRUE}) to indicate whether indexes or values of \code{vec}. }
+  \item{vec}{A numeric or integer vector. Other types are not supported yet.}
+  \item{n}{A positive integer greater than or equal to 1.}
+  \item{decreasing}{Logical. If \code{TRUE} (default), sort from largest to
+  smallest. This is the same as \code{decreasing} in \code{base::order},
+  whose default is \code{FALSE}.}
+  \item{hasna}{Logical. Whether \code{vec} contains \code{NA} values.
+  Default is \code{TRUE}.}
+  \item{index}{Logical. If \code{TRUE} (default), return indices. If
+  \code{FALSE}, return values.}
+}
+\details{
+  For small \code{n}, \code{topn()} uses memory proportional to \code{n}.
+  It falls back to \code{base::order()} when \code{n > 1500} and
+  \code{hasna = TRUE}, or when \code{n > 2000} and \code{hasna = FALSE}.
+  It also falls back when the selection scan has to rescan too often, for
+  example when \code{vec} is already sorted in the opposite direction. The
+  fallback allocates a full-length index: about 4 bytes per element. This can
+  use much more memory than the fast path.
+
+  For inputs longer than \code{.Machine$integer.max}, \code{topn()} keeps a
+  heap of at most \code{n} entries instead, so memory stays proportional to
+  \code{n} (about 24 bytes per entry plus 8 bytes per returned index). Class
+  attributes are ignored and the stored values are compared. Unlike
+  \code{base::order()}, \code{decreasing = TRUE} works for these inputs. For
+  \code{n} above roughly three quarters of the input length this heap can use
+  more memory than a full-length \code{order()} index, and \code{order()} is
+  faster for \code{decreasing = FALSE}.
+
+  For classed numeric vectors shorter than \code{.Machine$integer.max},
+  \code{xtfrm()} is applied once before selection, so their order matches
+  \code{order()}/\code{xtfrm()}.
 }
 \value{
-  \code{integer} vector of indices of the most extreme (according to \code{decreasing}) \code{n} values in vector \code{vec}. Please note that for large value of \code{n}, i.e. 1500 or 2000 (depending on the value of \code{hasna}), \code{topn} will default to base R function \code{order}. It also does so when the linear scan's rescan work becomes adversarial, e.g. for input already ordered opposite to \code{decreasing}, so the worst case is bounded. The fallback allocates a full-length \code{order} index (4 bytes per element: about 80 MB at 2e7 elements and 8 GB near \code{.Machine$integer.max}), so peak memory can be much higher than the linear path's memory proportional to \code{n}. Classed numeric vectors have \code{xtfrm} applied once and then use the same fast path, so their result matches \code{order}/\code{xtfrm} without sorting the whole vector for small \code{n}; for inputs longer than \code{.Machine$integer.max}, class attributes are ignored and the stored values are compared.
+  If \code{index = TRUE}, an integer vector of the indices of the \code{n}
+  largest (or smallest) values in \code{vec}. If \code{index = FALSE}, the
+  values themselves. For inputs longer than \code{.Machine$integer.max}, the
+  indices are returned as a double vector.
 
-  For inputs longer than \code{.Machine$integer.max} the result is a \code{double} vector of indices, as an integer cannot address the whole input, computed with memory proportional to \code{n}: the selection heap needs about 24 bytes per entry (double value, long index, missing flag) and the returned indices 8 bytes each. Note that for \code{n} larger than roughly three quarters of the input length this can exceed the memory of a full-length \code{order} index, and \code{order} (for \code{decreasing=FALSE}) processes such inputs faster; the saving is the largest for small \code{n}. The output matches \code{order(vec, decreasing=decreasing, method="radix", na.last=TRUE)[1:n]}: ties keep input order and missing values are placed last in input order; this holds whatever the value of \code{hasna}, and \code{\link{order}} itself errors with \code{decreasing=TRUE} for such inputs while \code{topn} does not.
+  Ties keep their input order. With \code{hasna = TRUE} (default), missing
+  values are placed last, in input order. \code{hasna = FALSE} asserts that
+  \code{vec} has no missing values: it is not checked, and for unclassed
+  vectors \code{NA} is then compared as an ordinary value. For inputs longer
+  than \code{.Machine$integer.max}, missing values are always placed last,
+  whatever the value of \code{hasna}. For inputs no longer than
+  \code{.Machine$integer.max}, the resulting order matches
+  \code{order(vec, decreasing = decreasing, method = "radix", na.last = TRUE)[1:n]}
+  when \code{vec} has no missing values or \code{hasna = TRUE}.
 }
 \author{Morgan Jacob}
 \examples{

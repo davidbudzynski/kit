@@ -2,22 +2,37 @@
 \alias{psort}
 \title{Parallel Sort}
 \description{
-  Similar to \code{base::sort} but just for character vector and partially using parallelism.
-  It is currently experimental and might change in the future. Use with caution.
+  Similar to \code{base::sort}, but only for character vectors and partly
+  using parallelism. It is experimental and might change in the future.
+  Use with caution.
 }
 \usage{
 psort(x, decreasing=FALSE, na.last=NA,
       nThread=getOption("kit.nThread"),c.locale=TRUE)
 }
 \arguments{
-  \item{x}{ A vector of type character. If other, it will default to \code{base::sort}}
-  \item{na.last}{ For controlling the treatment of \code{NA}s. If \code{TRUE}, missing values in the data are put last; if \code{FALSE}, they are put first; if \code{NA}, they are removed. }
-  \item{decreasing}{ A boolean indicating where to sort the data in decreasing way. Default is \code{FALSE}. }
-  \item{nThread}{ Number of thread to use. Default value is \code{1L}.}
-  \item{c.locale}{ A boolean, whether to use C Locale or R session locale. Default TRUE.}
+  \item{x}{A character vector. For other input, \code{psort()} warns and
+  calls \code{base::sort()}.}
+  \item{na.last}{Controls the treatment of \code{NA}s. If \code{TRUE},
+  missing values are put last; if \code{FALSE}, they are put first; if
+  \code{NA}, they are removed.}
+  \item{decreasing}{Logical. If \code{TRUE}, sort in decreasing order.
+  Default is \code{FALSE}.}
+  \item{nThread}{Integer. Number of threads to use. Default is
+  \code{getOption("kit.nThread")}.}
+  \item{c.locale}{Logical. If \code{TRUE} (default), sort byte by byte in the
+  C locale. The result is the same on every operating system and matches
+  \code{sort(x, method = "radix")}. If \code{FALSE}, use the session locale
+  and \code{sort(x, method = "quick")}; the order of accented letters and
+  other non-ASCII text can differ between operating systems and locales.}
+}
+\details{
+  For non-character \code{x}, \code{psort()} warns and calls
+  \code{base::sort()} with \code{method = "radix"} when
+  \code{c.locale = TRUE}, and \code{method = "quick"} otherwise.
 }
 \value{
-  Returns the input \code{x} in sorted order similar to \code{base::sort} but usually faster. If \code{c.locale=FALSE}, \code{psort} will return the same output as \code{base::sort} with \code{method="quick"}, i.e. using R session locale. If \code{c.locale=TRUE}, \code{psort} will return the same output as \code{base::sort} with \code{method="radix"}, i.e. using C locale. See example below.
+  A character vector with the values of \code{x} in sorted order.
 }
 \author{Morgan Jacob}
 \examples{

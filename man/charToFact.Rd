@@ -2,20 +2,32 @@
 \alias{charToFact}
 \title{Convert Character Vector to Factor}
 \description{
-  Similar to \code{base::as.factor} but much faster and only for converting character vector to factor.
+  Similar to \code{base::as.factor}, but much faster and only for converting
+  a character vector to a factor.
 }
 \usage{
 charToFact(x, decreasing=FALSE, addNA=TRUE,
            nThread=getOption("kit.nThread"))
 }
 \arguments{
-  \item{x}{ A vector of type character}
-  \item{decreasing}{ A boolean. Whether to order levels in decreasing order or not. Default is \code{FALSE}.}
-  \item{addNA}{ A boolean. Whether to include \code{NA} in levels of the output or not. Default is \code{TRUE}.}
-  \item{nThread}{ Number of thread to use.}
+  \item{x}{A character vector.}
+  \item{decreasing}{Logical. If \code{TRUE}, order levels in decreasing order.
+  Default is \code{FALSE}.}
+  \item{addNA}{Logical. If \code{TRUE} (default), include \code{NA} in the
+  levels of the output.}
+  \item{nThread}{Integer. Number of threads to use. Default is
+  \code{getOption("kit.nThread")}.}
+}
+\details{
+  Levels are sorted in the session locale. For non-ASCII text, the level order
+  can therefore differ between operating systems and locales. If you need a
+  fixed order, set the levels yourself with \code{factor(x, levels = ...)}.
+
+  With \code{addNA = TRUE} (default), \code{NA} is a level, unlike
+  \code{as.factor()}, which drops \code{NA} levels.
 }
 \value{
-  The character vector input as a factor. Please note that, unlike \code{as.factor}, \code{NA} levels are preserved by default, however this can be changed by setting argument \code{addNA} to \code{FALSE}.
+  A factor with the same length as \code{x}.
 }
 \examples{
 x = c("b","A","B","a","\xe4","a")

@@ -55,7 +55,10 @@ Functions \code{psum}, \code{pprod} work for integer, logical, double and comple
 
 Functions \code{panyv/pallv} are wrappers around \code{pcount}, and \code{panyNA/pallNA} are wrappers around \code{pcountNA}. They return a logical vector instead of the integer count.
 
-None of these functions recycle vectors i.e. all input vectors need to have the same length. All functions support long vectors with up to \code{2^64-1} elements.
+None of these functions recycle vectors: all input vectors need to have the
+same length. All functions support long vectors up to R's limit
+(\code{2^52} elements on 64-bit builds; \code{2^31-1} on 32-bit builds),
+subject to available memory.
 }
 \value{
 \code{psum/pprod/pmean} return the sum, product or mean of all arguments. The value returned will be of the highest argument type (integer < double < complex). \code{pprod} only returns double or complex. \code{fpmin/fpmax} return the element-wise minimum/maximum of all arguments, with the same type as the inputs if all inputs have the same type, otherwise the highest type (logical < integer < double). \code{prange} returns the element-wise range (max - min) as a double vector. \code{pall[v/NA]} and \code{pany[v/NA]} return a logical vector. \code{pcount[NA]} returns an integer vector. \code{pfirst/plast} return a vector of the same type as the inputs.
