@@ -44,8 +44,8 @@ navbar:
 
 
 reference:
-- title: "Parallel Statistical Functions"
-  desc: "Vector-valued (statistical) functions operating in parallel over vectors passed as arguments, or a single list of vectors/data frame."
+- title: "Row-wise Statistical Functions"
+  desc: "Vector-valued (statistical) functions that combine several vectors passed as arguments, or a single list of vectors/data frame, element by element."
 - contents:
   - parallel-funs
 - title: "Vectorised and Nested Switches"
