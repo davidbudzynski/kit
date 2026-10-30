@@ -23,15 +23,17 @@ install.packages("kit", repos = "https://fastverse.r-universe.dev")
 
 ## Features
 
-### Parallel Statistical Functions
+### Row-wise Statistical Functions
 
-Vector-valued functions operating in parallel over vectors or data frames:
+Vector-valued functions that combine several vectors or data frame columns element by element:
 
-- **`psum`, `pprod`, `pmean`**: Parallel sum, product, and mean
-- **`fpmin`, `fpmax`, `prange`**: (Fast) parallel minimum, maximum, and range
-- **`pall`, `pany`**: Parallel all/any operations
+- **`psum`, `pprod`, `pmean`**: Row-wise sum, product, and mean
+- **`fpmin`, `fpmax`, `prange`**: Row-wise minimum, maximum, and range
+- **`pall`, `pany`**: Row-wise all/any operations
 - **`pcount`, `pcountNA`**: Count occurrences of values or NAs
 - **`pfirst`, `plast`**: First/last non-missing values
+
+The word "parallel" in their names means they work across several vectors at once, not that they use multiple threads. These functions are single-threaded C code. Only `iif()`, `nswitch()`, `vswitch()`, `psort()`, and `charToFact()` can use OpenMP, and only when you raise `options(kit.nThread)` above its default of 1.
 
 ```r
 x <- c(1, 3, NA, 5)

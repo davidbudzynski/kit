@@ -18,6 +18,8 @@
 \title{Parallel (Statistical) Functions}
 \description{
 Vector-valued (statistical) functions operating in parallel over vectors passed as arguments, or a single list of vectors (such as a data frame). Similar to \code{\link{pmin}} and \code{\link{pmax}}, except that these functions do not recycle vectors.
+
+The word "parallel" here means that the functions work across several vectors at once. It does not mean multi-threading: these functions are single-threaded C code.
 }
 \usage{
 psum(..., na.rm = FALSE)
