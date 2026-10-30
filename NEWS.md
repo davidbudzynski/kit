@@ -2,6 +2,8 @@
 
 ### Bug Fixes
 
+- Fix `nswitch()` segfaulting when called without value/output pairs (e.g. `nswitch(1:3)` or `nswitch(1:3, default = 0L)`): the argument count is now validated before any pair is read, and the call errors with a clear message (#87).
+
 - Evaluate the internal `order()`/`sort()` calls in `topn`, `psort`, and `charToFact` in the base environment. A caller-defined `order`/`sort` could previously shadow them and make `topn` return out-of-bounds indices or `psort`/`charToFact` error or sort incorrectly (#74).
 
 - Fix shared-memory lifetime and error-path safety in `shareData()`: POSIX mapping names are now owned copies, long-vector lengths, allocation sizes, and existing mapping sizes are checked, finalizer verbosity is per mapping, failed mappings release descriptors, mappings, and temporary state, reader cleanup is unwind-safe, and finalizers verify mapping identity before unlinking owned names (#55).

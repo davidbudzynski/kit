@@ -37,6 +37,9 @@ SEXP nswitchR(SEXP x, SEXP na, SEXP nthreads, SEXP chkenc, SEXP args) {
             "Note that argument 'default' must be named explicitly (e.g.: default=0)", n);
   }
   n = n / 2;
+  if (n == 0) {
+    error("Argument '...' must contain at least one value/output pair.");
+  }
   const bool pchkenc = asLogical(chkenc);
   const bool nonna = !isNull(na);
   const bool ifact = isFactor(PTR_ETL(args, 1));
