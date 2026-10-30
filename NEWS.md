@@ -24,6 +24,8 @@
 
 ### Notes
 
+- Document `?kit` with a package page that explains OpenMP threads, platform support, encoding behavior, and the main functions. Add "OpenMP and threads" and "Platforms" sections to the README, and add `library(kit)` to the first README example (#90).
+
 - Reduce peak memory in `funique`, `fduplicated`, `uniqLen`, `psort`, and `charToFact` by starting duplicate hash tables at 256 slots and growing them on demand (4x, capped at the previous full-size table) instead of allocating the full table up front. Rehashing re-reads the source values, so results are unchanged; inputs with few unique values use much less memory, while peak memory can be higher at growth boundaries for high-cardinality inputs (#74).
 
 - Speed up `vswitch` for string and list outputs by scanning `x` once instead of once per value and fusing default/`na` writes into the match pass; single-value lookups also avoid a separate initialization pass. Atomic outputs keep the value-major vectorized pass, with the first value fused into initialization. Last-match-wins behavior for duplicate `values` is preserved, mixed output item types now fail with a clear error, and list-output scratch arrays are heap allocated so large outputs no longer exhaust the C stack (#74).
