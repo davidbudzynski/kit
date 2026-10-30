@@ -954,3 +954,11 @@ local({
   }
 })
 
+# issue #87: no value/output pairs must error, not read past args.
+expect_error(nswitch(1:3), pattern = "at least one value/output pair",
+             fixed = TRUE, info = "nswitch-0087.empty")
+expect_error(nswitch(1:3, default = 0L), pattern = "at least one value/output pair",
+             fixed = TRUE, info = "nswitch-0087.empty-default")
+expect_identical(nswitch(1:3, 1L, 10L), c(10L, NA_integer_, NA_integer_),
+                 info = "nswitch-0087.single-pair")
+
