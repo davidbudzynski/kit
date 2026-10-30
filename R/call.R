@@ -1,6 +1,6 @@
 # Function calls
 charToFact  = function(x, decreasing=FALSE, addNA=TRUE, nThread=getOption("kit.nThread")) .Call(CcharToFactR, x, decreasing, nThread, NA, NULL, addNA)
-clearData   = function(x, verbose=FALSE) .Call("CclearMappingObjectR", x, checkVerbose(verbose))
+clearData   = function(x, verbose=FALSE) .Call(CclearMappingObjectR, x, checkVerbose(verbose))
 count       = function(x, value) .Call(CcountR, x, value)
 countNA     = function(x) .Call(CcountNAR, x)
 countOccur  = function(x) .Call(CcountOccurR, x)
@@ -81,7 +81,7 @@ shareData = function(data, map_name, verbose=FALSE) {
   verbose = checkVerbose(verbose)
   # raw serialization skips the extra full-payload connection copy (#74)
   .Call(
-    "CcreateMappingObjectR", map_name, paste0(map_name,"_key"),
+    CcreateMappingObjectR, map_name, paste0(map_name,"_key"),
     serialize(data, NULL), verbose
   )
 }
@@ -89,5 +89,5 @@ shareData = function(data, map_name, verbose=FALSE) {
 getData = function(map_name, verbose=FALSE) {
   map_name = shmName(map_name)
   verbose = checkVerbose(verbose)
-  unserialize(.Call("CgetMappingObjectR", map_name, paste0(map_name,"_key"), verbose))
+  unserialize(.Call(CgetMappingObjectR, map_name, paste0(map_name,"_key"), verbose))
 }

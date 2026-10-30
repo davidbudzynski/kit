@@ -36,6 +36,7 @@ static const R_CallMethodDef CallEntries[] = {
 void R_init_kit(DllInfo *dll) {
   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
+  R_forceSymbols(dll, TRUE);
   R_RegisterCCallable("kit", "CcharToFactR",             (DL_FUNC) &charToFactR);
   R_RegisterCCallable("kit", "CcountNAR",                (DL_FUNC) &countNAR);
   R_RegisterCCallable("kit", "CcountOccurR",             (DL_FUNC) &countOccurR);
