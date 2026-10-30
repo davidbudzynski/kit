@@ -44,6 +44,10 @@ navbar:
 
 
 reference:
+- title: "Overview"
+  desc: "Package overview, threading, platform support and encodings."
+- contents:
+  - kit-package
 - title: "Row-wise Statistical Functions"
   desc: "Vector-valued (statistical) functions that combine several vectors passed as arguments, or a single list of vectors/data frame, element by element."
 - contents:
