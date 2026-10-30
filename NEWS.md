@@ -24,6 +24,12 @@
 
 ### Notes
 
+- Add a test that `shareData()` accepts a `map_name` without a leading slash on all platforms (#95).
+
+- Add weekly and manual CI jobs that run `R CMD check --use-gct` and `R CMD check --use-valgrind`. These checks do not run on pull requests (#95).
+
+- Raise the declared R floor to 4.2.0, the oldest version in CI, and remove the pre-3.5 shims from `src/kit.h` (#95).
+
 - Reduce peak memory in `funique`, `fduplicated`, `uniqLen`, `psort`, and `charToFact` by starting duplicate hash tables at 256 slots and growing them on demand (4x, capped at the previous full-size table) instead of allocating the full table up front. Rehashing re-reads the source values, so results are unchanged; inputs with few unique values use much less memory, while peak memory can be higher at growth boundaries for high-cardinality inputs (#74).
 
 - Speed up `vswitch` for string and list outputs by scanning `x` once instead of once per value and fusing default/`na` writes into the match pass; single-value lookups also avoid a separate initialization pass. Atomic outputs keep the value-major vectorized pass, with the first value fused into initialization. Last-match-wins behavior for duplicate `values` is preserved, mixed output item types now fail with a clear error, and list-output scratch arrays are heap allocated so large outputs no longer exhaust the C stack (#74).
